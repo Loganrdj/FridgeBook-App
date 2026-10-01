@@ -8,7 +8,7 @@ import parse from 'autosuggest-highlight/parse';
 const AddIngredient = () => {
   const [value, setValue] = useState('');
   const [suggestions, setSuggestion] = useState([]);
-  const { addIngredient } = useContext(GlobalContext);
+  const { addSearchIngredient: addIngredient } = useContext(GlobalContext);
 
   const onChange = (e, { newValue }) => {
     e.preventDefault();

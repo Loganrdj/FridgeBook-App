@@ -8,7 +8,7 @@ import expand from './../images/expand.svg';
 
 
 const RecipeCard = ({ id, title, image, missingIngredients = null }) => {
-  const { ingredients } = useContext(GlobalContext);
+  const { searchIngredients: ingredients } = useContext(GlobalContext);
 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);

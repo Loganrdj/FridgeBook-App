@@ -1,4 +1,4 @@
-import { formatDate, daysUntil } from './dates';
+import { formatDate, daysUntil, todayString } from './dates';
 
 describe('formatDate', () => {
   it('shows the date the user picked, with a 1-based month', () => {
@@ -28,5 +28,11 @@ describe('daysUntil', () => {
 
   it('returns null when there is no date', () => {
     expect(daysUntil('', now)).toBeNull();
+  });
+});
+
+describe('todayString', () => {
+  it('uses the local date with zero padding', () => {
+    expect(todayString(new Date(2026, 0, 5, 23, 59))).toBe('2026-01-05');
   });
 });

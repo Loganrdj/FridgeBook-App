@@ -4,10 +4,10 @@ import "./style.css";
 class IngredientInput extends Component {
     state = {
         name: "",
-        date_start: ``,
         date_expire: "",
         quantity: "",
-        fridge_bool: false
+        fridge_bool: "true",
+        saving: false
     }
 
     updateIngredient = (event) => {
@@ -18,26 +18,20 @@ class IngredientInput extends Component {
         })
     }
 
-    submitIngredient = (event) => {
+    submitIngredient = async (event) => {
         event.preventDefault();
-        let t = new Date();
-        const newIngredient = {
-            ...this.state,
-            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-            date_start: `${t.getFullYear()}-${t.getMonth()+1}-${t.getDate()}`,
+        if (this.state.saving) return;
+        this.setState({ saving: true });
+        const saved = await this.props.addIngredient({
+            name: this.state.name,
+            date_expire: this.state.date_expire,
             quantity: Number(this.state.quantity) || 1,
-            fridge_bool: this.state.fridge_bool === 'true' || this.state.fridge_bool === true
-        };
-
-        this.props.addIngredient(newIngredient);
-        this.props.afterSubmit();
-        this.setState({
-            name: "",
-            date_start: ``,
-            date_expire: "",
-            quantity: "",
-            fridge_bool: false
+            fridge_bool: this.state.fridge_bool === "true"
         });
+        // Keep what was typed if saving failed, so it can be fixed and retried
+        this.setState(saved
+            ? { name: "", date_expire: "", quantity: "", fridge_bool: this.state.fridge_bool, saving: false }
+            : { saving: false });
     }
 
     render() {
@@ -70,7 +64,10 @@ class IngredientInput extends Component {
                     </div>
                     <div className="form-group">
                         <label htmlFor="name">Quantity:</label>
-                        <input type="text"
+                        <input type="number"
+                            min="1"
+                            max="9999"
+                            step="1"
                             onChange={this.updateIngredient}
                             className="form-control"
                             id="quantity"
@@ -81,9 +78,9 @@ class IngredientInput extends Component {
                         </input>
                     </div>
                     <div className="form-group">
-                        <label htmlFor="name">Kitchen or Pantry:</label>
+                        <label htmlFor="name">Fridge or Pantry:</label>
                         <div>
-                        <label htmlFor="name">Kitchen</label>
+                        <label htmlFor="name">Fridge</label>
                         <input type="radio" id="fridge_bool" name="fridge_bool" value={true} checked={this.state.fridge_bool === "true"} onChange={this.updateIngredient}></input>
                         </div>
                         <div>
@@ -101,7 +98,7 @@ class IngredientInput extends Component {
                                 <option value={false}>Pantry</option>
                         </input> */}
                     </div>
-                    <button type="submit" className="px-3 py-2 rounded-md bg-black-500 text-white focus:outline-none hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed">Submit</button>
+                    <button type="submit" disabled={this.state.saving} className="px-3 py-2 rounded-md bg-black-500 text-white focus:outline-none hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed">Submit</button>
                 </div>
             </form>
         )

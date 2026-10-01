@@ -6,7 +6,6 @@ function Inventory(props){
     
     return  (<div>
                 <h2>{props.name} Inventory</h2>
-                {console.log(props.ingredients)}
                 <div className="container pt-2 container-inner-color">
                 <div className="row rowSpacing">
                             <div className="col-md-1">

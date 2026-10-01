@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { GlobalContext } from '../context/GlobalState';
 
 const Ingredient = ({ ingredient }) => {
-  const { deleteIngredient } = useContext(GlobalContext);
+  const { deleteSearchIngredient: deleteIngredient } = useContext(GlobalContext);
 
   return (
     <li

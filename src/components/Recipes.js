@@ -24,7 +24,7 @@ const Main = () => {
   );
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(false);
-  const { ingredients } = useContext(GlobalContext);
+  const { searchIngredients: ingredients } = useContext(GlobalContext);
 
   var mergedIngredients = ingredients.map((ingredient) => {
     return encodeURIComponent(ingredient.value);

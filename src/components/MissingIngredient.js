@@ -4,7 +4,7 @@ import { GlobalContext } from '../context/GlobalState';
 const MissingIngredient = ({ ingredient }) => {
   const [setChecked] = useState(false);
 
-  const { addIngredient, ingredients } = useContext(GlobalContext);
+  const { addSearchIngredient: addIngredient, searchIngredients: ingredients } = useContext(GlobalContext);
 
   const addMissingIngredient = (ingredient) => {
     const newIngredient = {

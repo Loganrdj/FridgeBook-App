@@ -22,3 +22,9 @@ export function daysUntil(value, now = new Date()) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   return Math.round((date - today) / MS_PER_DAY);
 }
+
+// Today's local date as "YYYY-MM-DD"
+export function todayString(now = new Date()) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
