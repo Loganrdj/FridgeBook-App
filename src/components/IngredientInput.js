@@ -6,7 +6,7 @@ class IngredientInput extends Component {
         name: "",
         date_start: ``,
         date_expire: "",
-        quantity: 0,
+        quantity: "",
         fridge_bool: false
     }
 
@@ -35,14 +35,14 @@ class IngredientInput extends Component {
             name: "",
             date_start: ``,
             date_expire: "",
-            quantity: 0,
+            quantity: "",
             fridge_bool: false
         });
     }
 
     render() {
         return (
-            <form>
+            <form onSubmit={this.submitIngredient}>
                 <div className="container">
                     <div className="form-group">
                         <label htmlFor="name">Name:</label>
@@ -52,6 +52,7 @@ class IngredientInput extends Component {
                             id="ingredient_name"
                             placeholder="Enter Ingredient Name"
                             name="name"
+                            value={this.state.name}
                             required>
                         </input>
                     </div>
@@ -63,6 +64,7 @@ class IngredientInput extends Component {
                             id="date_expire"
                             placeholder="Enter Expiration Date"
                             name="date_expire"
+                            value={this.state.date_expire}
                             required>
                         </input>
                     </div>
@@ -74,6 +76,7 @@ class IngredientInput extends Component {
                             id="quantity"
                             placeholder="Enter Ingredient Quantity"
                             name="quantity"
+                            value={this.state.quantity}
                             required>
                         </input>
                     </div>
@@ -81,11 +84,11 @@ class IngredientInput extends Component {
                         <label htmlFor="name">Kitchen or Pantry:</label>
                         <div>
                         <label htmlFor="name">Kitchen</label>
-                        <input type="radio" id="fridge_bool" name="fridge_bool" value={true} onChange={this.updateIngredient}></input>
+                        <input type="radio" id="fridge_bool" name="fridge_bool" value={true} checked={this.state.fridge_bool === "true"} onChange={this.updateIngredient}></input>
                         </div>
                         <div>
                         <label htmlFor="name">Pantry</label>
-                        <input type="radio" id="fridge_bool" name="fridge_bool" value={false} onChange={this.updateIngredient}></input>
+                        <input type="radio" id="fridge_bool" name="fridge_bool" value={false} checked={this.state.fridge_bool === "false"} onChange={this.updateIngredient}></input>
                         </div>
                         
                         {/* <input type="radio"
@@ -98,7 +101,7 @@ class IngredientInput extends Component {
                                 <option value={false}>Pantry</option>
                         </input> */}
                     </div>
-                    <button type="submit" onClick={this.submitIngredient} className="px-3 py-2 rounded-md bg-black-500 text-white focus:outline-none hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed">Submit</button>
+                    <button type="submit" className="px-3 py-2 rounded-md bg-black-500 text-white focus:outline-none hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed">Submit</button>
                 </div>
             </form>
         )

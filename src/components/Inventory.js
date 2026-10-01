@@ -1,5 +1,6 @@
 import React from 'react';
 import "./style.css";
+import { formatDate, daysUntil } from "../utils/dates";
 
 function Inventory(props){ 
     
@@ -31,13 +32,12 @@ function Inventory(props){
                         
 
                 {props.ingredients ? props.ingredients.map(item => {
-                    var tempDate = new Date(item.date_expire.substring(0, item.date_expire.length - 1))
-                    let remain = Math.floor(((new Date(tempDate) - new Date()) / 86400000) + 1);
-                    tempDate = tempDate.getMonth() + "/" + tempDate.getDate() + "/"+ tempDate.getFullYear();
+                    var tempDate = formatDate(item.date_expire);
+                    let remain = daysUntil(item.date_expire);
                     var textClass = "";
                     if (remain === 0){
                         textClass = "warningColor"
-                    } else if(remain < 0){
+                    } else if(remain !== null && remain < 0){
                         textClass = "alertColor"
                     }
                     
