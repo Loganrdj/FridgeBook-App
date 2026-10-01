@@ -10,14 +10,13 @@
     "@fullcalendar/react": "^4.4.0",
     "@fullcalendar/timegrid": "^4.4.0",
     "@testing-library/jest-dom": "^5.17.0",
-    "@testing-library/react": "^9.5.0",
+    "@testing-library/react": "^12.1.5",
     "@testing-library/user-event": "^7.2.1",
     "autosuggest-highlight": "^3.1.1",
     "axios": "^1.20.0",
     "connect-pg-simple": "^10.0.0",
     "express": "^4.22.3",
     "express-session": "^1.17.1",
-    "mysql2": "^3.24.5",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "pg": "^8.23.1",
@@ -31,13 +30,19 @@
     "reactjs-popup": "^1.5.0",
     "reactstrap": "^8.4.1",
     "sequelize": "^6.37.8",
-    "sweetalert2": "^11.26.25"
+    "sweetalert2": "^11.26.25",
+    "umzug": "^3.8.3"
   },
   "scripts": {
     "start": "react-scripts start",
     "start:server": "node server.js",
     "client": "cd src && npm run start",
-    "build": "react-scripts build"
+    "build": "react-scripts build",
+    "test": "npm run test:server && npm run test:client",
+    "test:server": "node --test --test-reporter=spec \"tests/server/*.test.js\"",
+    "test:client": "react-scripts test --watchAll=false",
+    "migrate": "node migrate.js",
+    "dev:db": "node scripts/dev-db.js"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -62,5 +67,8 @@
     "uuid": "^11.1.1",
     "underscore": "^1.13.8",
     "serialize-javascript": "^7.1.2"
+  },
+  "devDependencies": {
+    "embedded-postgres": "^18.4.0-beta.17"
   }
 }

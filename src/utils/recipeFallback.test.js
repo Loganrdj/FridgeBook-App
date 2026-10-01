@@ -5,13 +5,13 @@ describe('buildFallbackRecipes', () => {
     const recipes = buildFallbackRecipes([]);
 
     expect(recipes.length).toBeGreaterThan(0);
-    expect(recipes[0].title).toContain('Recipe');
+    expect(recipes[0].title).toContain('eggs');
   });
 
-  it('includes the provided ingredient names in the generated suggestions', () => {
+  it('builds titles and missing ingredients from the provided names', () => {
     const recipes = buildFallbackRecipes(['tomato', 'basil']);
 
     expect(recipes[0].title).toContain('tomato');
-    expect(recipes[0].missingIngredients[0].name).toContain('basil');
+    expect(recipes[0].missedIngredients.map((i) => i.name)).toEqual(['basil']);
   });
 });

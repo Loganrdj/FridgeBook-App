@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same Node/npm as Render, so a lock file Render can't install fails here first
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Server tests (API, auth, migrations against a real Postgres)
+        run: npm run test:server
+
+      - name: Frontend tests
+        run: npm run test:client
+        env:
+          CI: true
+
+      - name: Production build
+        run: npm run build
+        env:
+          CI: false # CRA would fail on old lint warnings

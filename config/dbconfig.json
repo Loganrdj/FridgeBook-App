@@ -1,17 +1,12 @@
 {
   "development": {
-    "username": "root",
-    "password": "",
-    "database": "fridge_db",
-    "host": "127.0.0.1",
-    "dialect": "mysql"
+    "use_env_variable": "DATABASE_URL",
+    "dialect": "postgres",
+    "logging": false
   },
   "test": {
-    "username": "root",
-    "password": "",
-    "database": "testdb",
-    "host": "localhost",
-    "dialect": "mysql",
+    "use_env_variable": "DATABASE_URL",
+    "dialect": "postgres",
     "logging": false
   },
   "production": {
