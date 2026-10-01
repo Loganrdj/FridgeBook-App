@@ -1,6 +1,6 @@
 # FridgeBook
 
-## https://fridgebook-app.netlify.app/
+## https://fridge-book.com/
 
 This application is used to monitor and keep track of your Fridge/Pantry Inventory! 
 

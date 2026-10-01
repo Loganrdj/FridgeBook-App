@@ -20,6 +20,6 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_CALLBACK_URL
-        value: https://fridgebook-app.netlify.app/auth/google/redirect
+        value: https://fridge-book.com/auth/google/redirect
       - key: CLIENT_URL
-        value: https://fridgebook-app.netlify.app/
+        value: https://fridge-book.com/
