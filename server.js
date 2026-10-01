@@ -58,4 +58,8 @@ db.sequelize.sync(syncOptions).then(function () {
   app.listen(PORT, function () {
     console.log(`Server now running on PORT ${PORT}.`);
   })
+}).catch(function (err) {
+  // Exit instead of hanging so the host reports the failed deploy right away
+  console.error("Could not connect to the database:", err.message);
+  process.exit(1);
 });
