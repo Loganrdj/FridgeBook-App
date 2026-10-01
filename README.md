@@ -24,7 +24,7 @@ Created by Logan Moss, Gaofeng Su, Ian Hooper, Omar Abbasi.
 
 ## Deployment
 - **Frontend:** Netlify builds the React app (`netlify.toml`) and proxies `/auth/*`, `/api/*` and `/profile` to the API.
-- **Backend:** Render runs `server.js` with a Render Postgres database, defined in `render.yaml`. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in the Render dashboard; see `.env.example` for all variables.
+- **Backend:** Render runs `server.js`, defined in `render.yaml`, with a Supabase Postgres database. Set `DATABASE_URL` (Supabase Session pooler string, password URL-encoded), `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in the Render dashboard; see `.env.example` for all variables.
 
 ## Local development
 ```

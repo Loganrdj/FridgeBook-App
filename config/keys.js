@@ -1,7 +1,7 @@
 module.exports = {
     // google oauth
     google:{
-        clientID: process.env.GOOGLE_CLIENT_ID || '492502873196-nnlrsopjgrjumcfmct3qt0lvijvn8uog.apps.googleusercontent.com',
+        clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
         callbackURL: process.env.GOOGLE_CALLBACK_URL || "/auth/google/redirect"
     },
