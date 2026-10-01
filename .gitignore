@@ -106,3 +106,4 @@ dist
 # build output / OS files
 build/
 .DS_Store
+.netlify/
