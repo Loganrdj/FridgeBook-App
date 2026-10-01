@@ -2,6 +2,17 @@ const router = require("express").Router();
 const db = require("../models");
 
 /**
+ * route = /api/health
+ * Runs a trivial query so an external keep-alive ping counts as database
+ * activity (Supabase's free tier pauses projects after a week without any).
+ */
+router.get("/health", (req, res) => {
+    db.sequelize.query("SELECT 1")
+        .then(() => res.json({ status: "ok" }))
+        .catch(() => res.status(503).json({ status: "db_unavailable" }));
+});
+
+/**
  * route = /api/ingredent
  */
 router.route("/ingredient")

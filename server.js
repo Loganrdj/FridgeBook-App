@@ -22,11 +22,27 @@ var session = require("express-session");
 app.set("trust proxy", 1);
 
 app.use(express.static("public"));
+// In production, keep sessions in Postgres so logins survive Render's free-tier
+// spin-downs and redeploys (the default MemoryStore is wiped on every restart)
+var sessionStore;
+if (process.env.NODE_ENV === "production") {
+  var PgSession = require("connect-pg-simple")(session);
+  sessionStore = new PgSession({
+    conObject: {
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false }
+    },
+    createTableIfMissing: true
+  });
+}
+
 app.use(session({
+  store: sessionStore,
   secret: myKeys.cookieSession.sessioinKey,
   resave: false,
-  saveUninitialized: false
-})); //cookie: { maxAge: 0.5 * 60 * 60 * 1000 } }
+  saveUninitialized: false,
+  cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 } // stay logged in for 30 days
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 
