@@ -21,6 +21,11 @@ const initialState = {
   ingredients: [],
   ingredientsLoaded: false,
   error: null,
+  // short confirmation shown after an action ("Added Milk to your shopping list.")
+  notice: null,
+  // the logged-in user's shopping list, from the server
+  shopping: [],
+  shoppingLoaded: false,
   // recipe-page search terms ({ id, value }), kept in this browser only
   searchIngredients: readJson(RECIPE_SEARCH_KEY)
 };
@@ -68,9 +73,17 @@ export const GlobalProvider = ({ children }) => {
   useEffect(() => {
     if (!user) {
       dispatch({ type: 'SET_INGREDIENTS', payload: [] });
+      dispatch({ type: 'SET_SHOPPING', payload: [] });
       return;
     }
     let cancelled = false;
+    axios.get('/api/shopping')
+      .then((response) => {
+        if (!cancelled) dispatch({ type: 'SET_SHOPPING', payload: response.data });
+      })
+      .catch(() => {
+        if (!cancelled) dispatch({ type: 'SET_ERROR', payload: 'Could not load your shopping list. Please refresh to try again.' });
+      });
     importLegacyIngredients()
       .catch(() => {}) // keep the browser copy and try again next time
       .then(() => axios.get('/api/ingredient'))
@@ -84,6 +97,70 @@ export const GlobalProvider = ({ children }) => {
   }, [user]);
 
   const clearError = useCallback(() => dispatch({ type: 'SET_ERROR', payload: null }), []);
+
+  // Confirmations disappear on their own after a few seconds
+  useEffect(() => {
+    if (!state.notice) return undefined;
+    const timer = setTimeout(() => dispatch({ type: 'SET_NOTICE', payload: null }), 4000);
+    return () => clearTimeout(timer);
+  }, [state.notice]);
+
+  // Shopping list actions: saved to the server first, then shown
+  const addShoppingItem = useCallback(async (item, { notify = false } = {}) => {
+    try {
+      const response = await axios.post('/api/shopping', item);
+      dispatch({ type: response.data.merged ? 'UPDATE_SHOPPING' : 'ADD_SHOPPING', payload: response.data });
+      if (notify) dispatch({ type: 'SET_NOTICE', payload: `Added ${response.data.name} to your shopping list.` });
+      return true;
+    } catch (err) {
+      dispatch({ type: 'SET_ERROR', payload: errorMessage(err, 'Could not add that to your shopping list.') });
+      return false;
+    }
+  }, []);
+
+  const updateShoppingItem = useCallback(async (id, fields) => {
+    try {
+      const response = await axios.patch(`/api/shopping/${id}`, fields);
+      dispatch({ type: 'UPDATE_SHOPPING', payload: response.data });
+      return true;
+    } catch (err) {
+      dispatch({ type: 'SET_ERROR', payload: errorMessage(err, 'Could not update that item.') });
+      return false;
+    }
+  }, []);
+
+  const deleteShoppingItem = useCallback(async (id) => {
+    try {
+      await axios.delete(`/api/shopping/${id}`);
+      dispatch({ type: 'REMOVE_SHOPPING', payload: [id] });
+    } catch (err) {
+      dispatch({ type: 'SET_ERROR', payload: errorMessage(err, 'Could not remove that item.') });
+    }
+  }, []);
+
+  const clearCheckedShopping = useCallback(async () => {
+    try {
+      await axios.delete('/api/shopping/checked');
+      dispatch({ type: 'REMOVE_CHECKED_SHOPPING' });
+    } catch (err) {
+      dispatch({ type: 'SET_ERROR', payload: errorMessage(err, 'Could not clear checked items.') });
+    }
+  }, []);
+
+  // entries: [{ id, date_expire, fridge_bool, quantity }]
+  const moveShoppingToKitchen = useCallback(async (entries) => {
+    try {
+      const response = await axios.post('/api/shopping/to-kitchen', { items: entries });
+      dispatch({ type: 'REMOVE_SHOPPING', payload: entries.map((entry) => entry.id) });
+      dispatch({ type: 'ADD_INGREDIENTS', payload: response.data.ingredients });
+      const count = response.data.moved;
+      dispatch({ type: 'SET_NOTICE', payload: `Moved ${count} ${count === 1 ? 'item' : 'items'} to your kitchen.` });
+      return true;
+    } catch (err) {
+      dispatch({ type: 'SET_ERROR', payload: errorMessage(err, 'Could not move those items to your kitchen.') });
+      return false;
+    }
+  }, []);
 
   // Fridge/pantry actions: saved to the server first, then shown
   const addIngredient = useCallback(async (ingredient) => {
@@ -143,6 +220,14 @@ export const GlobalProvider = ({ children }) => {
         ingredientsLoaded: state.ingredientsLoaded,
         error: state.error,
         clearError,
+        notice: state.notice,
+        shopping: state.shopping,
+        shoppingLoaded: state.shoppingLoaded,
+        addShoppingItem,
+        updateShoppingItem,
+        deleteShoppingItem,
+        clearCheckedShopping,
+        moveShoppingToKitchen,
         addIngredient,
         deleteIngredient,
         updateIngredient,

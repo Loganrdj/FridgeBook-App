@@ -14,6 +14,7 @@ function mockServer({ user = null, ingredients = [] } = {}) {
   axios.get.mockImplementation((url) => {
     if (url === '/profile') return Promise.resolve({ data: user ? { user_name: user } : '' });
     if (url === '/api/ingredient') return Promise.resolve({ data: ingredients });
+    if (url === '/api/shopping') return Promise.resolve({ data: [] });
     return Promise.reject(new Error(`unexpected GET ${url}`));
   });
 }
@@ -109,5 +110,16 @@ describe('recipes', () => {
     const chosen = screen.getByRole('list', { name: 'Chosen ingredients' });
     // expired spinach is skipped; the rest go in soonest-first
     expect(within(chosen).getAllByRole('button').map((b) => b.textContent.replace('×', '').trim())).toEqual(['milk', 'rice']);
+  });
+});
+
+describe('kitchen to shopping list', () => {
+  it('adds a kitchen item to the shopping list and confirms', async () => {
+    mockServer({ user: 'Alice Smith', ingredients: [milk] });
+    axios.post.mockResolvedValue({ data: { id: 50, name: 'Milk', quantity: 1, note: null, checked: false, source: 'kitchen' } });
+    visit('/kitchen');
+    fireEvent.click(await screen.findByRole('button', { name: 'Add Milk to the shopping list' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Added Milk to your shopping list.');
+    expect(axios.post).toHaveBeenCalledWith('/api/shopping', { name: 'Milk', quantity: 1, source: 'kitchen' });
   });
 });

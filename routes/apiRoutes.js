@@ -1,9 +1,9 @@
 const router = require("express").Router();
 const db = require("../models");
+const { requireAuth, isValidDate, toBoolean, todayString, parseId, handleError: logAndFail } = require("./validation");
 
 const MAX_QUANTITY = 9999;
 const MAX_IMPORT = 200;
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * route = /api/health
@@ -15,29 +15,6 @@ router.get("/health", (req, res) => {
         .then(() => res.json({ status: "ok" }))
         .catch(() => res.status(503).json({ status: "db_unavailable" }));
 });
-
-// Everything below belongs to the logged-in user only
-function requireAuth(req, res, next) {
-    if (req.isAuthenticated()) return next();
-    res.status(401).json({ error: "Not logged in" });
-}
-
-function isValidDate(value) {
-    if (typeof value !== "string" || !DATE_PATTERN.test(value)) return false;
-    const [y, m, d] = value.split("-").map(Number);
-    const date = new Date(Date.UTC(y, m - 1, d));
-    return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
-}
-
-function toBoolean(value) {
-    if (value === true || value === "true") return true;
-    if (value === false || value === "false") return false;
-    return undefined;
-}
-
-function todayString() {
-    return new Date().toISOString().slice(0, 10);
-}
 
 /**
  * Validates an ingredient from the request body and returns only the fields a
@@ -96,16 +73,13 @@ function serialize(food) {
 
 // Looks up an ingredient by :id, scoped to the current user
 function findOwnIngredient(req) {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id < 1) return Promise.resolve(null);
+    const id = parseId(req.params.id);
+    if (!id) return Promise.resolve(null);
     return db.Foods.findOne({ where: { id, UserId: req.user.id } });
 }
 
 function handleError(res) {
-    return (err) => {
-        console.error("Ingredient route failed:", err.message);
-        res.status(500).json({ error: "Something went wrong" });
-    };
+    return logAndFail(res, "Ingredient route");
 }
 
 /**
@@ -191,3 +165,5 @@ router.route("/ingredient/:id")
     });
 
 module.exports = router;
+module.exports.parseIngredient = parseIngredient;
+module.exports.serialize = serialize;

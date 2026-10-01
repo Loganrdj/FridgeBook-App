@@ -3,7 +3,7 @@ import ExpiryBadge from './ExpiryBadge';
 import { formatShortDate } from '../utils/dates';
 
 // One kitchen item: −/+ quantity, an expiry badge, and inline editing
-function InventoryItem({ item, updateIngredient, changeQuantity, deleteIngredient }) {
+function InventoryItem({ item, updateIngredient, changeQuantity, deleteIngredient, addShoppingItem }) {
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(null);
     const [saving, setSaving] = useState(false);
@@ -84,6 +84,11 @@ function InventoryItem({ item, updateIngredient, changeQuantity, deleteIngredien
             </div>
             <ExpiryBadge date={item.date_expire} />
             <div className="fb-item-actions">
+                {addShoppingItem && (
+                    <button type="button" className="fb-icon-btn" aria-label={`Add ${item.name} to the shopping list`}
+                        title="Add to shopping list"
+                        onClick={() => addShoppingItem({ name: item.name, quantity: 1, source: 'kitchen' }, { notify: true })}>🛒</button>
+                )}
                 <button type="button" className="fb-btn-ghost fb-btn-sm" onClick={startEditing} aria-label={`Edit ${item.name}`}>Edit</button>
                 <button type="button" className="fb-btn-danger fb-btn-sm" onClick={remove} aria-label={`Remove ${item.name}`}>Remove</button>
             </div>

@@ -7,6 +7,7 @@ const IDLE_LIMIT_MS = 30 * 60 * 1000;
 const LINKS = [
     { to: '/dashboard', label: 'Dashboard' },
     { to: '/kitchen', label: 'Kitchen' },
+    { to: '/shopping', label: 'Shopping' },
     { to: '/recipes', label: 'Recipes' },
     { to: '/calendar', label: 'Calendar' }
 ];

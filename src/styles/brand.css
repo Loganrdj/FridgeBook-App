@@ -406,3 +406,44 @@ html { scroll-padding-top: 120px; }
 .fb-recipe-body { padding: 14px 16px 18px; }
 .fb-recipe-body h3 { font-size: 1.1rem; text-transform: capitalize; }
 .fb-recipe-missing { margin-top: 6px !important; color: var(--fb-ink-soft); font-size: 0.9rem; }
+
+/* ---------- Shopping ---------- */
+.fb-grid-shopping { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: start; }
+.fb-shop-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 2px;
+  border-bottom: 1px solid #F3ECDF;
+}
+.fb-shop-item:last-child { border-bottom: none; }
+.fb-checkbox { width: 22px; height: 22px; accent-color: var(--fb-mint); cursor: pointer; }
+.fb-shop-name { margin: 0; font-weight: 700; cursor: pointer; overflow-wrap: anywhere; }
+.fb-shop-note { display: block; font-weight: 400; font-size: 0.85rem; color: var(--fb-ink-soft); }
+.fb-shop-item.is-checked .fb-shop-name { text-decoration: line-through; color: var(--fb-ink-soft); }
+.fb-cart { border-top: 2px dashed #F0E6D4; }
+.fb-cart-title { font-size: 1.05rem; }
+.fb-putaway { margin-bottom: 20px; border-color: var(--fb-mint); }
+.fb-putaway-hint { margin-bottom: 8px !important; color: var(--fb-ink-soft); }
+.fb-putaway-row { display: grid; gap: 10px; padding: 14px 0; border-bottom: 1px solid #F3ECDF; }
+.fb-putaway-row:last-child { border-bottom: none; }
+.fb-putaway-title { font-weight: 700; font-size: 1.05rem; }
+.fb-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 1072px;
+  margin: 16px auto 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--fb-mint-tint);
+  color: #1E6E5E;
+  font-weight: 700;
+}
+@media (max-width: 900px) {
+  .fb-grid-shopping { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .fb-banner, .fb-notice { margin: 12px 16px 0; }
+}

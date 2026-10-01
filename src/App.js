@@ -5,6 +5,7 @@ import AppNav from "./components/AppNav"
 import Kitchen from "./components/Kitchen"
 import Dashboard from "./components/Dashboard"
 import Recipes from "./components/Recipes"
+import ShoppingList from "./components/ShoppingList"
 import EventCalendar from "./components/EventCalendar"
 import Landing from "./components/Landing"
 import Logo from "./components/Logo"
@@ -21,8 +22,10 @@ function Splash() {
 }
 
 function ErrorBanner() {
-  const { error, clearError } = useContext(GlobalContext);
-  if (!error) return null;
+  const { error, clearError, notice } = useContext(GlobalContext);
+  if (!error) {
+    return notice ? <div className="fb-notice" role="status">{notice}</div> : null;
+  }
   return (
     <div className="fb-banner" role="alert">
       <span>{error}</span>
@@ -67,6 +70,7 @@ function App() {
             <PrivateRoute exact path="/dashboard" component={Dashboard} />
             <PrivateRoute exact path="/kitchen" component={Kitchen} />
             <PrivateRoute exact path="/recipes" component={Recipes} />
+            <PrivateRoute exact path="/shopping" component={ShoppingList} />
             <PrivateRoute exact path="/calendar" component={EventCalendar} />
             <Redirect to="/" />
           </Switch>

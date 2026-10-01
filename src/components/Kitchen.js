@@ -21,14 +21,14 @@ function InventoryCard({ title, icon, items, emptyText, actions }) {
 }
 
 function Kitchen() {
-    const { ingredients, ingredientsLoaded, updateIngredient, changeQuantity, deleteIngredient } = useContext(GlobalContext);
+    const { ingredients, ingredientsLoaded, updateIngredient, changeQuantity, deleteIngredient, addShoppingItem } = useContext(GlobalContext);
     const [query, setQuery] = useState('');
 
     const search = query.trim().toLowerCase();
     const shown = search ? ingredients.filter((item) => item.name.toLowerCase().includes(search)) : ingredients;
     const fridge = shown.filter((item) => item.fridge_bool === true);
     const pantry = shown.filter((item) => item.fridge_bool !== true);
-    const actions = { updateIngredient, changeQuantity, deleteIngredient };
+    const actions = { updateIngredient, changeQuantity, deleteIngredient, addShoppingItem };
     const emptyText = (place) => !ingredientsLoaded ? 'Loading…'
         : search ? `Nothing in your ${place} matches "${query.trim()}".`
         : `Your ${place} is empty. Add items from the Dashboard.`;
