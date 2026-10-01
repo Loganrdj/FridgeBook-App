@@ -11,11 +11,10 @@ passport.serializeUser((user, done) => {
 });
 
 passport.deserializeUser((id, done) => {
-    /* TODO: Replace with mongodb*/
-    Users.findOne({ where: { id: id } }).then((user) => {
-        done(null, user);
-    });
-
+    // A missing user (e.g. deleted) just means "not logged in"
+    Users.findOne({ where: { id: id } })
+        .then((user) => done(null, user || false))
+        .catch(done);
 });
 
 passport.use(
@@ -27,17 +26,16 @@ passport.use(
     }, (accessToken, refreshToken, profile, done) => {
         Users.findOne({ where: { googleID: profile.id } }).then((currentUser) => {
             if (currentUser) {
-                // user found
-                console.log("user found!");
-                done(null, currentUser.dataValues)
-            } else {
-                // user not found, create a new users in database
-                Users.create({ name: profile.displayName, googleID: profile.id }).then(function (newUser) {
-                    console.log("new user created!");
-                    done(null, newUser.dataValues);
-                });
+                // keep the name in sync with the Google account
+                if (profile.displayName && currentUser.name !== profile.displayName) {
+                    return currentUser.update({ name: profile.displayName });
+                }
+                return currentUser;
             }
-        });
+            return Users.create({ name: profile.displayName || "FridgeBook user", googleID: profile.id });
+        })
+            .then((user) => done(null, user.dataValues))
+            .catch(done);
 
     })
 );
