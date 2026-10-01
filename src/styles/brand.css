@@ -300,14 +300,20 @@ html { scroll-padding-top: 120px; }
 .fb-toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
 .fb-toolbar .fb-input { max-width: 340px; }
 .fb-items { list-style: none; margin: 0; padding: 0; }
+/* two lines per item: name + badge, then quantity + actions */
 .fb-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name badge" "stepper actions";
   align-items: center;
-  gap: 12px;
+  gap: 8px 12px;
   padding: 12px 2px;
   border-bottom: 1px solid #F3ECDF;
 }
+.fb-item > div:first-child { grid-area: name; }
+.fb-item > .fb-badge { grid-area: badge; justify-self: end; }
+.fb-item > .fb-stepper { grid-area: stepper; }
+.fb-item > .fb-item-actions { grid-area: actions; justify-self: end; }
 .fb-item:last-child { border-bottom: none; }
 .fb-item-name { font-weight: 700; overflow-wrap: anywhere; }
 .fb-item-date { color: var(--fb-ink-soft); font-size: 0.85rem; }
@@ -368,8 +374,6 @@ html { scroll-padding-top: 120px; }
   .fb-appnav-name { display: none; }
   .fb-page { padding: 24px 16px 48px; }
   .fb-card { padding: 18px 16px; }
-  .fb-item { grid-template-columns: minmax(0, 1fr) auto; row-gap: 8px; }
-  .fb-item-actions { justify-self: end; }
   .fb-form-row { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
