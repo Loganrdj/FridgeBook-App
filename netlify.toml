@@ -7,6 +7,13 @@
   # CRA treats lint warnings as errors when CI=true
   CI = "false"
 
+# Send the old Netlify address to the custom domain so logins aren't split across two hosts
+[[redirects]]
+  from = "https://fridgebook-app.netlify.app/*"
+  to = "https://fridge-book.com/:splat"
+  status = 301
+  force = true
+
 # Proxy backend routes to the Render API so session cookies stay on this domain
 [[redirects]]
   from = "/auth/*"
