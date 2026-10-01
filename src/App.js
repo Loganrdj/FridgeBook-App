@@ -1,14 +1,14 @@
 import React, { useContext } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GlobalProvider, GlobalContext } from './context/GlobalState';
-import Nav from "./components/Nav"
+import AppNav from "./components/AppNav"
 import Kitchen from "./components/Kitchen"
 import Dashboard from "./components/Dashboard"
-import Final from "./components/Final"
+import Recipes from "./components/Recipes"
 import EventCalendar from "./components/EventCalendar"
 import Landing from "./components/Landing"
 import Logo from "./components/Logo"
-import "./components/Landing.css";
+import "./styles/brand.css";
 import {
   BrowserRouter as Router,
   Switch,
@@ -24,9 +24,9 @@ function ErrorBanner() {
   const { error, clearError } = useContext(GlobalContext);
   if (!error) return null;
   return (
-    <div className="alert alert-danger d-flex justify-content-between align-items-center m-3" role="alert">
+    <div className="fb-banner" role="alert">
       <span>{error}</span>
-      <button type="button" className="close" aria-label="Dismiss" onClick={clearError}>×</button>
+      <button type="button" aria-label="Dismiss" onClick={clearError}>×</button>
     </div>
   );
 }
@@ -47,11 +47,11 @@ function PrivateRoute({ component: Component, ...rest }) {
       if (loading) return <Splash />;
       if (!user) return <Redirect to="/" />;
       return (
-        <>
-          <Nav />
+        <div className="fb-app">
+          <AppNav />
           <ErrorBanner />
           <Component />
-        </>
+        </div>
       );
     }} />
   );
@@ -66,7 +66,7 @@ function App() {
             <Route exact path="/" component={LandingRoute} />
             <PrivateRoute exact path="/dashboard" component={Dashboard} />
             <PrivateRoute exact path="/kitchen" component={Kitchen} />
-            <PrivateRoute exact path="/recipes" component={Final} />
+            <PrivateRoute exact path="/recipes" component={Recipes} />
             <PrivateRoute exact path="/calendar" component={EventCalendar} />
             <Redirect to="/" />
           </Switch>

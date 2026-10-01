@@ -637,34 +637,6 @@ a:hover {
   }
 }
 
-/* Header Styles */
-
-.header {
-  background: url('./images/wiyk-bg.jpg');
-  background-color: grey;
-  min-height: 60vh;
-  padding: 2rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-size: cover;
-  background-position: center;
-}
-.
-
-@media (min-width: 768px) {
-  .header {
-    min-height: 40vh;
-  }
-}
-
-@media (min-width: 1024px) {
-  .header {
-    min-height: 100vh;
-    width: 40vw;
-  }
-}
-
 /* Input Form Styles */
 
 .react-autosuggest__container {

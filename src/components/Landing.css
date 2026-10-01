@@ -1,35 +1,3 @@
-/* ---------- Brand tokens ---------- */
-:root {
-  --fb-ink: #12332E;
-  --fb-ink-soft: #3D5A55;
-  --fb-mint: #2BB39A;
-  --fb-mint-dark: #1E8C78;
-  --fb-mint-tint: #DDF4EE;
-  --fb-cream: #FFF8EC;
-  --fb-coral: #FF7A59;
-  --fb-butter: #FFE58A;
-  --fb-steel: #CFDCDA;
-  --fb-white: #F7FBFA;
-  --fb-font-display: 'Fredoka', 'Nunito', system-ui, sans-serif;
-  --fb-font-body: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --fb-font-hand: 'Caveat', 'Comic Sans MS', cursive;
-}
-
-/* ---------- Logo ---------- */
-.fb-logo {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--fb-ink);
-  font-family: var(--fb-font-display);
-  font-size: 1.5rem;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  line-height: 1;
-}
-.fb-logo-mark { width: 36px; height: 36px; flex: none; }
-.fb-logo-word strong { color: var(--fb-mint-dark); font-weight: 700; }
-
 /* ---------- Page ---------- */
 .fb-landing {
   min-height: 100vh;
@@ -463,23 +431,6 @@
   color: var(--fb-ink-soft);
 }
 
-/* ---------- Loading splash ---------- */
-.fb-splash {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--fb-cream);
-}
-.fb-splash .fb-logo-mark {
-  width: 56px;
-  height: 56px;
-  animation: fb-pulse 1.2s ease-in-out infinite;
-}
-@keyframes fb-pulse {
-  50% { transform: scale(0.9); opacity: 0.7; }
-}
-
 /* ---------- Responsive ---------- */
 @media (max-width: 960px) {
   .fb-hero { grid-template-columns: 1fr; text-align: center; padding-top: 24px; gap: 8px; }
@@ -512,13 +463,4 @@
   .fb-interior::after { animation: none; opacity: 0; }
   .fb-signin { animation: none; opacity: 1; }
   .fb-chill { display: none; }
-  .fb-splash .fb-logo-mark { animation: none; }
 }
-
-/* ---------- App nav ---------- */
-.fb-nav .navbar-brand { padding: 0; margin-right: 24px; }
-.fb-logo-nav { font-size: 1.3rem; }
-.fb-logo-nav .fb-logo-mark { width: 30px; height: 30px; }
-.fb-nav .nav-link.active { color: var(--fb-mint-dark); font-weight: 700; }
-.fb-nav-user { margin-right: 12px; font-weight: 600; color: var(--fb-ink-soft); }
-.kitchen-empty { margin: 8px 0 16px; color: var(--fb-ink-soft); }

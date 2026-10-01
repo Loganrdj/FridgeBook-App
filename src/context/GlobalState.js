@@ -106,18 +106,26 @@ export const GlobalProvider = ({ children }) => {
     }
   }, []);
 
-  const updateIngredientQuantity = useCallback(async (id, amount) => {
-    const item = state.ingredients.find((ingredient) => ingredient.id === id);
-    if (!item) return;
-    const quantity = Math.max(0, item.quantity - amount);
+  // Saves changed fields (name, quantity, date_expire, fridge_bool); quantity 0 removes the item
+  const updateIngredient = useCallback(async (id, fields) => {
     try {
-      const response = await axios.patch(`/api/ingredient/${id}`, { quantity });
+      const response = await axios.patch(`/api/ingredient/${id}`, fields);
       if (response.data.deleted) dispatch({ type: 'DELETE_INGREDIENT', payload: id });
       else dispatch({ type: 'UPDATE_INGREDIENT', payload: response.data });
+      return true;
     } catch (err) {
       dispatch({ type: 'SET_ERROR', payload: errorMessage(err, 'Could not update that item.') });
+      return false;
     }
-  }, [state.ingredients]);
+  }, []);
+
+  // −/+ buttons: going below 1 removes the item
+  const changeQuantity = useCallback((id, delta) => {
+    const item = state.ingredients.find((ingredient) => ingredient.id === id);
+    if (!item) return Promise.resolve(false);
+    const quantity = Math.min(9999, Math.max(0, item.quantity + delta));
+    return updateIngredient(id, { quantity });
+  }, [state.ingredients, updateIngredient]);
 
   // Recipe search actions (this browser only)
   const addSearchIngredient = useCallback((ingredient) => {
@@ -137,7 +145,8 @@ export const GlobalProvider = ({ children }) => {
         clearError,
         addIngredient,
         deleteIngredient,
-        updateIngredientQuantity,
+        updateIngredient,
+        changeQuantity,
         searchIngredients: state.searchIngredients,
         addSearchIngredient,
         deleteSearchIngredient

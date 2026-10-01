@@ -23,12 +23,9 @@
     "pg-hstore": "^2.3.4",
     "react": "^16.13.1",
     "react-autosuggest": "^10.0.2",
-    "react-bootstrap": "^1.0.1",
     "react-dom": "^16.13.1",
     "react-router-dom": "^5.1.2",
     "react-scripts": "^5.0.1",
-    "reactjs-popup": "^1.5.0",
-    "reactstrap": "^8.4.1",
     "sequelize": "^6.37.8",
     "sweetalert2": "^11.26.25",
     "umzug": "^3.8.3"

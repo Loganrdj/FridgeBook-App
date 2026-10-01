@@ -1,106 +1,73 @@
-import React, { useState, useContext } from 'react';
-import axios from 'axios';
-import RecipesList from './RecipesList';
+import React, { useContext, useState } from 'react';
+import AddIngredient from './AddIngredient';
+import RecipeCard from './RecipeCard';
 import { GlobalContext } from '../context/GlobalState';
 import { buildFallbackRecipes } from '../utils/recipeFallback';
+import { daysUntil } from '../utils/dates';
 
+// Recipe ideas from chosen ingredients. Results are sample ideas until a recipe API is connected.
+function Recipes() {
+  const { ingredients, searchIngredients, addSearchIngredient, deleteSearchIngredient } = useContext(GlobalContext);
+  const [recipes, setRecipes] = useState(null);
 
-const Main = () => {
+  const chosen = searchIngredients.map((item) => item.value);
 
-  // function returnAll() {
-  //   axios.get('/profile').then((response) => {
-  //     if (response.data) {
-  //       let kitchenArr = [];
-  //       for(let i = 0; i < response.data.ingredients.length; i++){
-  //         kitchenArr.push(response.data.ingredients[i].name);
-  //       }
-  //       return kitchenArr;
-  //     }
-  //   })
-  // }
-
-  const [message, setMessage] = useState(
-    'Add ingredients then click "Fetch Recipes". Try to add as many ingredients as you can for better results.'
-  );
-  const [recipes, setRecipes] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const { searchIngredients: ingredients } = useContext(GlobalContext);
-
-  var mergedIngredients = ingredients.map((ingredient) => {
-    return encodeURIComponent(ingredient.value);
-  });
-
-  var encodedIngredients = mergedIngredients.join();
-
-  const callDatabase = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    setLoading(true);
-
-    try {
-      const ingredientNames = ingredients.map((ingredient) => ingredient.value);
-      const fallbackRecipes = buildFallbackRecipes(ingredientNames);
-      setRecipes(fallbackRecipes);
-      setLoading(false);
-      setMessage('Showing local recipe suggestions while the old backend is unavailable.');
-    } catch (err) {
-      setLoading(false);
-      setMessage('We could not load recipe suggestions right now.');
-    }
-  };
-
-  const fetchRecipes = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    setLoading(true);
-
-    try {
-      const ingredientNames = ingredients.map((ingredient) => ingredient.value);
-      const fallbackRecipes = buildFallbackRecipes(ingredientNames);
-      setRecipes(fallbackRecipes);
-      setLoading(false);
-
-      if (fallbackRecipes.length === 0) {
-        setMessage("Darn! Can't find any recipes. Try adding more ingredients.");
-      } else {
-        setMessage('');
-      }
-    } catch (err) {
-      setLoading(false);
-      setMessage('We could not load recipe suggestions right now.');
-    }
-  };
+  // Adds the kitchen items that expire soonest (up to 5) to the search
+  function useExpiring() {
+    const known = new Set(chosen.map((name) => name.toLowerCase()));
+    ingredients
+      .filter((item) => daysUntil(item.date_expire) !== null && daysUntil(item.date_expire) >= 0)
+      .slice(0, 5)
+      .filter((item) => !known.has(item.name.toLowerCase()))
+      .forEach((item) => addSearchIngredient({ id: `kitchen-${item.id}`, value: item.name.toLowerCase() }));
+  }
 
   return (
-    <div className="lg:w-60vw lg:max-h-100vh lg:overflow-y-auto flex flex-col justify-between">
-      <section className="py-16">
-        <div className="px-8 max-w-5xl m-auto">
-          <div className="border-b border-gray-400 pb-2 flex justify-between mb-6">
-            <h2 className="font-bold text-gray-900 text-3xl">Recipes</h2>
-            <button
-              onClick={fetchRecipes}
-              disabled={loading}
-              className="px-3 py-2 rounded-md bg-black-500 text-white focus:outline-none hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? `Fetching Recipes` : `Fetch Recipes from search`}
-            </button>
-            <button
-              onClick={callDatabase}
-              disabled={loading}
-              className="px-3 py-2 rounded-md bg-black-500 text-white focus:outline-none hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? `Searching...` : `What can I make?`}
-            </button>
-            
-          </div>
-          <p className="text-l">{message}</p>
-          <RecipesList recipes={recipes} loading={loading} />
+    <main className="fb-page">
+      <header className="fb-page-header">
+        <h1>Recipes</h1>
+        <p>Find ideas that use what you already have.</p>
+      </header>
+
+      <section className="fb-card" aria-labelledby="cook-with-title" style={{ marginBottom: 20 }}>
+        <div className="fb-card-header">
+          <h2 id="cook-with-title"><span className="fb-card-icon" aria-hidden="true">🥕</span>Cook with</h2>
+          <button type="button" className="fb-btn-ghost fb-btn-sm" onClick={useExpiring} disabled={ingredients.length === 0}>
+            Use what's expiring
+          </button>
+        </div>
+        <div className="fb-recipe-search">
+          <AddIngredient />
+        </div>
+        {chosen.length > 0 && (
+          <ul className="fb-chips fb-chosen" aria-label="Chosen ingredients">
+            {searchIngredients.map((item) => (
+              <li key={item.id}>
+                <button type="button" className="fb-chip is-active" onClick={() => deleteSearchIngredient(item.id)}
+                  aria-label={`Remove ${item.value}`}>
+                  {item.value} <span aria-hidden="true">×</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div style={{ marginTop: 16 }}>
+          <button type="button" className="fb-btn" onClick={() => setRecipes(buildFallbackRecipes(chosen))}>
+            Find recipes
+          </button>
         </div>
       </section>
-    </div>
+
+      {recipes && (
+        <section aria-label="Recipe ideas">
+          <p className="fb-note-text">Recipe search is being rebuilt, so these are sample ideas for now.</p>
+          <div className="fb-recipe-grid">
+            {recipes.map((recipe) => <RecipeCard key={recipe.id} recipe={recipe} />)}
+          </div>
+        </section>
+      )}
+    </main>
   );
-};
+}
 
-export default Main;
-
-
+export default Recipes;

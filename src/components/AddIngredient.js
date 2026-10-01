@@ -75,13 +75,14 @@ const AddIngredient = () => {
   };
 
   const inputProps = {
-    placeholder: 'Ex: apples',
+    placeholder: 'Add an ingredient, e.g. apples',
+    'aria-label': 'Add an ingredient',
     value,
     onChange
   };
 
   return (
-    <form className="w-full m-auto max-w-sm lg:max-w-md mb-4 relative">
+    <form className="fb-autosuggest" onSubmit={(e) => e.preventDefault()}>
       <Autosuggest
         suggestions={suggestions.slice(0, 6)}
         onSuggestionsFetchRequested={onSuggestionsFetchRequested}

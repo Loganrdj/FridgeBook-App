@@ -1,6 +1,4 @@
-import React, { Component } from "react";
-import ReactDOM from "react-dom";
-import { Col, Row } from "reactstrap";
+import React, { useEffect, useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -9,146 +7,73 @@ import Alert from "sweetalert2";
 import "@fullcalendar/core/main.css";
 import "@fullcalendar/daygrid/main.css";
 import "@fullcalendar/timegrid/main.css";
-// import "bootstrap/dist/css/bootstrap.min.css";
-import "./style.css";
 
+// Meal planning: drag a saved recipe onto a day. Saved recipes come back once
+// they're stored in the account (they used to live in a now-deleted Firebase project).
+function EventCalendar() {
+  const savedRef = useRef(null);
+  const [savedRecipes, setSavedRecipes] = useState([]);
 
-
-class EventCalendar extends Component {
-  constructor() {
-    super();
-    this.state = {
-      currentItem: '',
-      username: '',
-      items: [],
-      calendarItems: []
-    }
-  }
-  /**
-   * adding dragable properties to external events through javascript
-   */
-  
-
-  componentDidMount() {
-    let draggableEl = document.getElementById("external-events");
-    new Draggable(draggableEl, {
-      itemSelector: ".savedRecipes",
-      eventData: function(eventEl) {
-        let title = eventEl.getAttribute("title");
-        let id = eventEl.getAttribute("data");
-        return {
-          title: title,
-          id: id,
-        };
-      }
+  useEffect(() => {
+    const draggable = new Draggable(savedRef.current, {
+      itemSelector: ".fb-saved-recipe",
+      eventData: (el) => ({ title: el.getAttribute("title"), id: el.getAttribute("data-id") })
     });
-    // Saved recipes used to come from a Firebase project that has since been
-    // deactivated. They'll be loaded from the API once they're stored in Postgres.
-  }
+    return () => draggable.destroy();
+  }, []);
 
-  removeItem(itemId) {
-    this.setState({ items: this.state.items.filter(item => item.id !== itemId) });
-  }
-
-  /**
-   * when we click on event we are displaying event details
-   */
-  eventClick = eventClick => {
+  const eventClick = ({ event }) => {
     Alert.fire({
-      title: eventClick.event.title,
+      title: event.title,
       showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Remove Recipe",
+      confirmButtonColor: "#C2421F",
+      cancelButtonColor: "#2BB39A",
+      confirmButtonText: "Remove from calendar",
       cancelButtonText: "Close"
-    }).then(result => {
-      if (result.value) {
-        eventClick.event.remove(); // It will remove event from the calendar
-        Alert.fire("Deleted!", "Your Recipe has been deleted.", "success");
-      }
+    }).then((result) => {
+      if (result.value) event.remove();
     });
   };
 
-  // eventReceive = eventReceive => {
-  //   Alert.fire({
-  //     title: eventReceive.event.title,
-  //     showCancelButton: true,
-  //     confirmButtonColor: "#d33",
-  //     cancelButtonColor: "#3085d6",
-  //     confirmButtonText: "Save Recipe?",
-  //     cancelButtonText: "Close"
-  //   }).then(result => {
-  //       console.log(eventReceive.event.title);
-  //       console.log(eventReceive.event._instance.range.start);
-  //   })
-  //   }
-      
-  render() {
-    return (
-      <div className="animated fadeIn p-4 demo-app fade-in">
-        <Row>
-          <Col lg={3} sm={3} md={3}>
-            <div
-              id="external-events"
-              style={{
-                padding: "10px",
-                width: "80%",
-                height: "auto",
-                maxHeight: "-webkit-fill-available"
-              }}
-            >
-              <p align="center">
-                <strong> Stored Recipes</strong>
-              </p>
-              {this.state.items.map(recipe => (
-                <div
-                  className="savedRecipes rounded-md bg-black-500 text-white hover:bg-gray-400 disabled:opacity-50 margin:2px border:gray"
-                  title={recipe.title}
-                  data={recipe.image}
-                  key={recipe.id}
-                >
-                  {recipe.title}
-                  <button className = "btn btn-secondary btn-sm active removeList left-0" onClick={() => this.removeItem(recipe.id)}>Remove</button>
-    
-                  <br></br>
-                </div>
-              ))}
-            </div>
-          </Col>
-
-          <Col lg={9} sm={9} md={9}>
-            <div className="demo-app-calendar" id="mycalendartest">
-              <FullCalendar
-                defaultView="dayGridMonth"
-                header={{
-                  left: "prev,next today",
-                  center: "title",
-                  right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek"
-                }}
-                rerenderDelay={10}
-                eventDurationEditable={false}
-                editable={true}
-                droppable={true}
-                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                ref={this.calendarComponentRef}
-                weekends={this.state.calendarWeekends}
-                events={this.state.calendarEvents}
-                eventDrop={this.drop}
-                // drop={this.drop}
-                eventReceive={this.eventReceive}
-                eventClick={this.eventClick}
-                // selectable={true}
-              />
-            </div>
-          </Col>
-        </Row>
+  return (
+    <main className="fb-page">
+      <header className="fb-page-header">
+        <h1>Calendar</h1>
+        <p>Plan your meals for the week.</p>
+      </header>
+      <div className="fb-calendar-layout">
+        <section className="fb-card" aria-labelledby="saved-recipes-title">
+          <div className="fb-card-header">
+            <h2 id="saved-recipes-title"><span className="fb-card-icon" aria-hidden="true">📌</span>Saved recipes</h2>
+          </div>
+          <div ref={savedRef}>
+            {savedRecipes.length === 0 ? (
+              <p className="fb-empty">Saving recipes is coming soon. Then you'll drag them onto a day to plan your week.</p>
+            ) : savedRecipes.map((recipe) => (
+              <div key={recipe.id} className="fb-saved-recipe" title={recipe.title} data-id={recipe.id}>
+                <span>{recipe.title}</span>
+                <button type="button" className="fb-icon-btn" aria-label={`Remove ${recipe.title}`}
+                  onClick={() => setSavedRecipes(savedRecipes.filter((r) => r.id !== recipe.id))}>×</button>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section className="fb-card fb-calendar" aria-label="Meal calendar">
+          <FullCalendar
+            defaultView="dayGridMonth"
+            header={{ left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek,timeGridDay" }}
+            buttonText={{ today: "Today", month: "Month", week: "Week", day: "Day" }}
+            height="auto"
+            eventDurationEditable={false}
+            editable={true}
+            droppable={true}
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            eventClick={eventClick}
+          />
+        </section>
       </div>
-    );
-  }
+    </main>
+  );
 }
-
-
-const rootElement = document.getElementById("root");
-// ReactDOM.render(<App />, rootElement);
 
 export default EventCalendar;
