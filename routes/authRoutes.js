@@ -11,9 +11,11 @@ router.get("/google/redirect", passport.authenticate("google"), (req, res) => {
 
 
 /* log out */
-router.get("/logout", (req, res) => {
-    req.logOut();
-    res.redirect(process.env.CLIENT_URL || "http://localhost:3000/");
+router.get("/logout", (req, res, next) => {
+    req.logout((err) => {
+        if (err) return next(err);
+        res.redirect(process.env.CLIENT_URL || "http://localhost:3000/");
+    });
 });
 
 module.exports = router;
