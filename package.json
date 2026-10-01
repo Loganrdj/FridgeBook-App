@@ -9,7 +9,7 @@
     "@fullcalendar/interaction": "^4.4.0",
     "@fullcalendar/react": "^4.4.0",
     "@fullcalendar/timegrid": "^4.4.0",
-    "@testing-library/jest-dom": "^4.2.4",
+    "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
     "autosuggest-highlight": "^3.1.1",
@@ -27,7 +27,7 @@
     "react-bootstrap": "^1.0.1",
     "react-dom": "^16.13.1",
     "react-router-dom": "^5.1.2",
-    "react-scripts": "3.4.1",
+    "react-scripts": "^5.0.1",
     "reactjs-popup": "^1.5.0",
     "reactstrap": "^8.4.1",
     "sequelize": "^6.37.8",
@@ -37,7 +37,7 @@
     "start": "react-scripts start",
     "start:server": "node server.js",
     "client": "cd src && npm run start",
-    "build": "NODE_OPTIONS=--openssl-legacy-provider react-scripts build"
+    "build": "react-scripts build"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -58,9 +58,9 @@
     "node": ">=18"
   },
   "overrides": {
-    "sequelize": {
-      "uuid": "^11.1.1"
-    },
-    "@babel/runtime": "^7.26.10"
+    "@babel/runtime": "^7.26.10",
+    "uuid": "^11.1.1",
+    "underscore": "^1.13.8",
+    "serialize-javascript": "^7.1.2"
   }
 }
