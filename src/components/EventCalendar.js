@@ -11,7 +11,6 @@ import "@fullcalendar/daygrid/main.css";
 import "@fullcalendar/timegrid/main.css";
 // import "bootstrap/dist/css/bootstrap.min.css";
 import "./style.css";
-import firebase from './firebase.js';
 import { eventReceive } from "@fullcalendar/core";
 
 
@@ -44,43 +43,12 @@ class EventCalendar extends Component {
         };
       }
     });
-    // const calendarRef = firebase.database().ref('Recipes2');
-    // calendarRef.on('value', (snapshot) => {
-    //   let calendarItems = snapshot.val();
-    //   let calendarState = [];
-    //   for (let calendarItem in calendarItems) {
-    //     calendarState.push({
-    //       id: calendarItem,
-    //       title: calendarItems[this.eventReceive].title,
-    //     });
-    //   }
-    //   this.setState({
-    //     calendarItems: calendarState
-    //   });
-    // });
-
-    const itemsRef = firebase.database().ref('savedRecipes');
-    itemsRef.on('value', (snapshot) => {
-      let items = snapshot.val();
-      let newState = [];
-      for (let item in items) {
-        newState.push({
-          id: item,
-          title: items[item].title,
-        });
-      }
-      this.setState({
-        items: newState
-      });
-    });
-    
-    
-
+    // Saved recipes used to come from a Firebase project that has since been
+    // deactivated. They'll be loaded from the API once they're stored in Postgres.
   }
 
   removeItem(itemId) {
-    const itemRef = firebase.database().ref(`/savedRecipes/${itemId}`);
-    itemRef.remove();
+    this.setState({ items: this.state.items.filter(item => item.id !== itemId) });
   }
 
   /**
@@ -111,7 +79,6 @@ class EventCalendar extends Component {
   //     confirmButtonText: "Save Recipe?",
   //     cancelButtonText: "Close"
   //   }).then(result => {
-  //       firebase.database().ref().child('Recipes2').push(eventReceive.event.title);
   //       console.log(eventReceive.event.title);
   //       console.log(eventReceive.event._instance.range.start);
   //   })
