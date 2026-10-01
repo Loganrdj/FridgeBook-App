@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import axios from 'axios';
 import "./style.css";
 import IngredientInput from './IngredientInput';
 import Notifications from './Notifications';
@@ -11,7 +12,13 @@ class Dashboard extends Component {
     state = { user_name: undefined, ingredients: undefined, login: false };
 
     componentDidMount() {
-        this.setState({ login: true, user_name: 'Local User', ingredients: this.context.ingredients });
+        this.setState({ ingredients: this.context.ingredients });
+        // Greet logged-in users by their Google name (ingredients still come from localStorage)
+        axios.get('/profile').then((response) => {
+            if (response.data && response.data.user_name) {
+                this.setState({ login: true, user_name: response.data.user_name });
+            }
+        }).catch(() => {});
     }
 
     updateIngredients = () => {
@@ -30,7 +37,7 @@ class Dashboard extends Component {
     render() {
         return (
             <div className="fade-in">
-                <h1>Welcome {this.state.user_name}</h1>
+                <h1>{this.state.user_name ? `Welcome, ${this.state.user_name}` : 'Welcome'}</h1>
                 <div className="container container-inner-color">
                     <div className="row">
                         <div className="col-md-6">
