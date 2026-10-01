@@ -1,0 +1,33 @@
+[build]
+  command = "npm run build"
+  publish = "build"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # CRA treats lint warnings as errors when CI=true
+  CI = "false"
+
+# Proxy backend routes to the Render API so session cookies stay on this domain
+[[redirects]]
+  from = "/auth/*"
+  to = "https://fridgebook-api.onrender.com/auth/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://fridgebook-api.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/profile"
+  to = "https://fridgebook-api.onrender.com/profile"
+  status = 200
+  force = true
+
+# SPA fallback for react-router
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
