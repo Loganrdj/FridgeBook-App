@@ -444,6 +444,21 @@ html { scroll-padding-top: 120px; }
 .fb-history-title { font-size: 1.1rem; margin-bottom: 12px !important; text-transform: capitalize; }
 .fb-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* ---------- Receipt scan ---------- */
+.fb-scan-pick { display: grid; justify-items: center; gap: 14px; text-align: center; padding: 32px 22px; }
+.fb-scan-pick .fb-empty-icon { font-size: 2.6rem; }
+.fb-scan-pick label.fb-btn { cursor: pointer; }
+.fb-btn.is-disabled { opacity: 0.6; pointer-events: none; }
+.fb-scan-privacy { max-width: 520px; color: var(--fb-ink-soft); font-size: 0.9rem; line-height: 1.5; }
+.fb-scan-preview { max-height: 260px; max-width: 100%; border-radius: 12px; box-shadow: 0 6px 18px rgba(18, 51, 46, 0.12); }
+.fb-scan-item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; padding: 14px 0; border-bottom: 1px solid #F3ECDF; }
+.fb-scan-item:last-child { border-bottom: none; }
+.fb-scan-item .fb-checkbox { margin-top: 30px; }
+.fb-scan-item.is-excluded .fb-scan-fields { opacity: 0.45; }
+.fb-scan-fields { display: grid; gap: 10px; }
+.fb-scan-row { display: grid; grid-template-columns: 110px 1fr; gap: 10px; }
+.fb-scan-fields .fb-field > span { display: flex; align-items: center; gap: 8px; }
+
 /* ---------- Shopping ---------- */
 .fb-stack { display: grid; gap: 20px; align-content: start; }
 .fb-meal-group { padding-top: 6px; }
@@ -500,4 +515,11 @@ html { scroll-padding-top: 120px; }
 }
 @media (max-width: 720px) {
   .fb-banner, .fb-notice { margin: 12px 16px 0; }
+}
+
+/* receipt review: one row per item on wide screens */
+@media (min-width: 900px) {
+  .fb-scan-fields { grid-template-columns: minmax(0, 1fr) 90px 170px auto; align-items: end; }
+  .fb-scan-row { display: contents; }
+  .fb-scan-fields .fb-segmented { margin-bottom: 2px; }
 }

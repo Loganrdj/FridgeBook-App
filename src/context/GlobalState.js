@@ -210,6 +210,23 @@ export const GlobalProvider = ({ children }) => {
     }
   }, []);
 
+  // Several items at once (e.g. from a scanned receipt)
+  const addIngredients = useCallback(async (items) => {
+    try {
+      const response = await axios.post('/api/ingredient/import', {
+        ingredients: items.map((item) => ({ date_start: todayString(), ...item }))
+      });
+      const list = await axios.get('/api/ingredient');
+      dispatch({ type: 'SET_INGREDIENTS', payload: list.data });
+      const count = response.data.imported;
+      dispatch({ type: 'SET_NOTICE', payload: `Added ${count} ${count === 1 ? 'item' : 'items'} to your kitchen.` });
+      return count;
+    } catch (err) {
+      dispatch({ type: 'SET_ERROR', payload: errorMessage(err, 'Could not add those to your kitchen.') });
+      return 0;
+    }
+  }, []);
+
   const deleteIngredient = useCallback(async (id) => {
     try {
       await axios.delete(`/api/ingredient/${id}`);
@@ -267,6 +284,7 @@ export const GlobalProvider = ({ children }) => {
         clearCheckedShopping,
         moveShoppingToKitchen,
         addIngredient,
+        addIngredients,
         deleteIngredient,
         updateIngredient,
         changeQuantity,

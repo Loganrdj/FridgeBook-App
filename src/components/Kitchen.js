@@ -1,4 +1,5 @@
 import React, { useContext, useState } from 'react';
+import { Link } from 'react-router-dom';
 import InventoryItem from './InventoryItem';
 import { GlobalContext } from '../context/GlobalState';
 
@@ -42,6 +43,7 @@ function Kitchen() {
             <div className="fb-toolbar">
                 <input className="fb-input" type="search" placeholder="Search your kitchen" aria-label="Search your kitchen"
                     value={query} onChange={(event) => setQuery(event.target.value)} />
+                <Link to="/scan" className="fb-btn">📷 Scan a receipt</Link>
             </div>
             <div className="fb-grid-2">
                 <InventoryCard title="Fridge" icon="🧊" items={fridge} emptyText={emptyText('fridge')} actions={actions} />

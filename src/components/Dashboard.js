@@ -50,6 +50,7 @@ function Dashboard() {
                 <section className="fb-card" aria-labelledby="add-item-title">
                     <div className="fb-card-header">
                         <h2 id="add-item-title"><span className="fb-card-icon" aria-hidden="true">➕</span>Add an item</h2>
+                        <Link to="/scan" className="fb-btn-ghost fb-btn-sm">📷 Scan receipt</Link>
                     </div>
                     <AddItemForm addIngredient={addIngredient} />
                 </section>

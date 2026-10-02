@@ -6,6 +6,7 @@ import Kitchen from "./components/Kitchen"
 import Dashboard from "./components/Dashboard"
 import Recipes from "./components/Recipes"
 import ShoppingList from "./components/ShoppingList"
+import ReceiptScan from "./components/ReceiptScan"
 import EventCalendar from "./components/EventCalendar"
 import Landing from "./components/Landing"
 import Logo from "./components/Logo"
@@ -92,6 +93,7 @@ function App() {
             <PrivateRoute exact path="/kitchen" component={Kitchen} />
             <PrivateRoute exact path="/recipes" component={Recipes} />
             <PrivateRoute exact path="/shopping" component={ShoppingList} />
+            <PrivateRoute exact path="/scan" component={ReceiptScan} />
             <PrivateRoute exact path="/calendar" component={EventCalendar} />
             <Redirect to="/" />
           </Switch>
