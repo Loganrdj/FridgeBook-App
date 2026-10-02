@@ -3,7 +3,7 @@ const crypto = require("crypto");
 const db = require("../models");
 const gemini = require("../lib/gemini");
 const { haveChecker } = require("../lib/ingredientMatch");
-const { requireAuth, todayString } = require("./validation");
+const { requireAuth, localDate, daysBetween } = require("./validation");
 
 const DAILY_LIMIT = Number(process.env.RECIPE_DAILY_LIMIT) || 20;
 const MODELS = (process.env.GEMINI_RECIPE_MODELS || "gemini-3.5-flash-lite,gemini-3.8-flash").split(",").map((m) => m.trim()).filter(Boolean);
@@ -70,11 +70,6 @@ function cacheSet(key, recipes) {
   cache.set(key, { at: Date.now(), recipes });
 }
 
-function daysUntil(dateString) {
-  const today = new Date(todayString() + "T00:00:00Z");
-  return Math.round((new Date(dateString + "T00:00:00Z") - today) / 86400000);
-}
-
 function cleanText(value, max) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
@@ -103,26 +98,42 @@ function cleanRecipes(data, have) {
   }).filter((recipe) => recipe.title && recipe.ingredients.length && recipe.steps.length);
 }
 
-async function usedToday(userId) {
-  const row = await db.AiUsages.findOne({ where: { UserId: userId, kind: "recipes", day: todayString() } });
+async function usedToday(userId, today) {
+  const row = await db.AiUsages.findOne({ where: { UserId: userId, kind: "recipes", day: today } });
   return row ? row.count : 0;
 }
 
-async function recordUse(userId) {
+async function recordUse(userId, today) {
   await db.sequelize.query(
     `INSERT INTO "AiUsages" ("UserId", kind, day, count, "createdAt", "updatedAt")
      VALUES ($1, 'recipes', $2, 1, now(), now())
      ON CONFLICT ("UserId", kind, day) DO UPDATE SET count = "AiUsages".count + 1, "updatedAt" = now()`,
-    { bind: [userId, todayString()] }
+    { bind: [userId, today] }
   );
 }
 
 /**
+ * route = /api/recipes/usage?local_date=YYYY-MM-DD
+ * How many searches are left today (resets at the user's midnight)
+ */
+router.get("/usage", async (req, res) => {
+  try {
+    const used = await usedToday(req.user.id, localDate(req.query.local_date));
+    res.json({ limit: DAILY_LIMIT, remaining: Math.max(0, DAILY_LIMIT - used) });
+  } catch (err) {
+    console.error("Recipe usage failed:", err.message);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+/**
  * route = /api/recipes/suggest
- * { ingredients?: string[] } -> { recipes, remaining, cached }
+ * { ingredients?: string[], local_date?: "YYYY-MM-DD" } -> { recipes, remaining, cached }
  * With no ingredients, the recipes are built from what's expiring in the kitchen.
  */
 router.post("/suggest", async (req, res) => {
+  const today = localDate(req.body && req.body.local_date);
+  const daysUntil = (date) => daysBetween(today, date);
   const raw = req.body && req.body.ingredients;
   if (raw !== undefined && !Array.isArray(raw)) return res.status(422).json({ errors: ["ingredients must be an array"] });
   const terms = [...new Set((raw || []).map((term) => cleanText(term, 50).toLowerCase()).filter(Boolean))];
@@ -141,10 +152,10 @@ router.post("/suggest", async (req, res) => {
     const key = crypto.createHash("sha1").update(JSON.stringify([req.user.id, [...terms].sort(), kitchen])).digest("hex");
     const cached = cacheGet(key);
     if (cached) {
-      return res.json({ recipes: cached, remaining: Math.max(0, DAILY_LIMIT - (await usedToday(req.user.id))), cached: true });
+      return res.json({ recipes: cached, remaining: Math.max(0, DAILY_LIMIT - (await usedToday(req.user.id, today))), cached: true });
     }
 
-    const used = await usedToday(req.user.id);
+    const used = await usedToday(req.user.id, today);
     if (used >= DAILY_LIMIT) {
       return res.status(429).json({ error: `You've used all ${DAILY_LIMIT} recipe searches for today. They reset tomorrow.`, remaining: 0 });
     }
@@ -169,7 +180,7 @@ router.post("/suggest", async (req, res) => {
     const recipes = cleanRecipes(data, haveChecker(usable));
     if (!recipes.length) return res.status(502).json({ error: "Couldn't come up with recipes for that. Try different ingredients." });
 
-    await recordUse(req.user.id);
+    await recordUse(req.user.id, today);
     cacheSet(key, recipes);
     res.json({ recipes, remaining: Math.max(0, DAILY_LIMIT - used - 1), cached: false });
   } catch (err) {

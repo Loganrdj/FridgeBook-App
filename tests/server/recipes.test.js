@@ -194,3 +194,16 @@ describe("protecting the free quota", () => {
     assert.equal(res.status, 503);
   });
 });
+
+describe("daily limit follows the user's own date", () => {
+  test("usage reports what's left and counts on the local date", async () => {
+    const { cookie, user } = await userWithKitchen("Alice", [["Chicken thighs", 2]]);
+    const tomorrow = day(1);
+    await t.db.AiUsages.create({ UserId: user.id, kind: "recipes", day: tomorrow, count: 20 });
+    // it's already tomorrow where the user is: they've used everything
+    assert.deepEqual((await t.request("GET", `/api/recipes/usage?local_date=${tomorrow}`, { cookie })).body, { limit: 20, remaining: 0 });
+    assert.equal((await suggest(cookie, { local_date: tomorrow })).status, 429);
+    // a far-off date is ignored in favour of the server's date
+    assert.deepEqual((await t.request("GET", `/api/recipes/usage?local_date=${day(30)}`, { cookie })).body, { limit: 20, remaining: 20 });
+  });
+});

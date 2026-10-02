@@ -1,6 +1,7 @@
-import React, { useContext, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
+import axios from 'axios';
 import { GlobalContext } from '../context/GlobalState';
-import { addDays } from '../utils/dates';
+import { addDays, todayString, formatDayLabel, formatShortDate } from '../utils/dates';
 
 const QUICK_DATES = [
   { label: '3 days', days: 3 },
@@ -135,9 +136,81 @@ function AddToList({ addShoppingItem }) {
   );
 }
 
+// Ingredients upcoming meals still need, kept apart from the real list until the
+// user chooses to add them
+function MealNeeds({ addShoppingItem, addShoppingItems }) {
+  const [needs, setNeeds] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(() => axios.get(`/api/meals/needs?local_date=${todayString()}`)
+    .then((response) => setNeeds(response.data))
+    .catch(() => setNeeds([])), []);
+  useEffect(() => { load(); }, [load]);
+
+  if (!needs || needs.length === 0) return null;
+
+  const noteFor = (need) => [need.amount, `for ${need.meal_title}`].filter(Boolean).join(' · ').slice(0, 100);
+  const toAdd = needs.filter((need) => !need.on_list);
+  const meals = [];
+  needs.forEach((need) => {
+    let meal = meals.find((m) => m.id === need.meal_id);
+    if (!meal) meals.push(meal = { id: need.meal_id, title: need.meal_title, date: need.date, items: [] });
+    meal.items.push(need);
+  });
+
+  async function act(work) {
+    setBusy(true);
+    await work();
+    await load();
+    setBusy(false);
+  }
+  const addOne = (need) => act(() => addShoppingItem({ name: need.name, note: noteFor(need), source: 'meal' }, { notify: true }));
+  const addAll = () => act(() => addShoppingItems(toAdd.map((need) => ({ name: need.name, note: noteFor(need), source: 'meal' }))));
+  const haveIt = (need) => act(() => axios.post(`/api/meals/${need.meal_id}/dismiss`, { name: need.name }).catch(() => {}));
+
+  return (
+    <section className="fb-card fb-meal-needs" aria-labelledby="meal-needs-title">
+      <div className="fb-card-header">
+        <h2 id="meal-needs-title"><span className="fb-card-icon" aria-hidden="true">📅</span>For planned meals</h2>
+        {toAdd.length > 0 && (
+          <button type="button" className="fb-btn fb-btn-sm" onClick={addAll} disabled={busy}>Add all ({toAdd.length})</button>
+        )}
+      </div>
+      <p className="fb-putaway-hint">Not on your list yet. Add what you need, or tell us you already have it.</p>
+      {meals.map((meal) => (
+        <div key={meal.id} className="fb-meal-group" aria-label={`${meal.title}, ${formatDayLabel(meal.date)}`} role="group">
+          <h3 className="fb-meal-title">{meal.title} <span className="fb-count">· {formatDayLabel(meal.date)}</span></h3>
+          <ul className="fb-items">
+            {meal.items.map((need) => (
+              <li key={need.name} className="fb-need">
+                <div>
+                  <div className="fb-item-name">{need.name}{need.amount && <span className="fb-shop-note"> {need.amount}</span>}</div>
+                  <span className={`fb-badge ${need.reason === 'missing' ? 'fb-badge-none' : 'fb-badge-today'}`}>
+                    {need.reason === 'missing' ? 'Not in your kitchen' : `Yours expires ${formatShortDate(need.expires)}`}
+                  </span>
+                </div>
+                {need.on_list ? (
+                  <span className="fb-badge fb-badge-ok">On your list ✓</span>
+                ) : (
+                  <div className="fb-item-actions">
+                    <button type="button" className="fb-btn-ghost fb-btn-sm" disabled={busy} onClick={() => addOne(need)}
+                      aria-label={`Add ${need.name} to the shopping list`}>Add</button>
+                    <button type="button" className="fb-btn-ghost fb-btn-sm" disabled={busy} onClick={() => haveIt(need)}
+                      aria-label={`I have ${need.name}`}>I have it</button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 function ShoppingList() {
   const {
-    shopping, shoppingLoaded, addShoppingItem, updateShoppingItem, deleteShoppingItem,
+    shopping, shoppingLoaded, addShoppingItem, addShoppingItems, updateShoppingItem, deleteShoppingItem,
     clearCheckedShopping, moveShoppingToKitchen
   } = useContext(GlobalContext);
   const [puttingAway, setPuttingAway] = useState(false);
@@ -191,12 +264,15 @@ function ShoppingList() {
           )}
         </section>
 
-        <section className="fb-card" aria-labelledby="add-to-list-title">
-          <div className="fb-card-header">
-            <h2 id="add-to-list-title"><span className="fb-card-icon" aria-hidden="true">➕</span>Add to list</h2>
-          </div>
-          <AddToList addShoppingItem={addShoppingItem} />
-        </section>
+        <div className="fb-stack">
+          <MealNeeds addShoppingItem={addShoppingItem} addShoppingItems={addShoppingItems} />
+          <section className="fb-card" aria-labelledby="add-to-list-title">
+            <div className="fb-card-header">
+              <h2 id="add-to-list-title"><span className="fb-card-icon" aria-hidden="true">➕</span>Add to list</h2>
+            </div>
+            <AddToList addShoppingItem={addShoppingItem} />
+          </section>
+        </div>
       </div>
     </main>
   );

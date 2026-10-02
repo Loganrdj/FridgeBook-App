@@ -1,74 +1,128 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import axios from "axios";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin, { Draggable } from "@fullcalendar/interaction";
+import interactionPlugin from "@fullcalendar/interaction";
 import Alert from "sweetalert2";
 import "@fullcalendar/core/main.css";
 import "@fullcalendar/daygrid/main.css";
 import "@fullcalendar/timegrid/main.css";
+import { todayString, daysUntil, formatDayLabel } from "../utils/dates";
 
-// Meal planning: drag a saved recipe onto a day. Saved recipes come back once
-// they're stored in the account (they used to live in a now-deleted Firebase project).
+const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// Meal planning: recipes added from the Recipes page, one per day or several
 function EventCalendar() {
-  const savedRef = useRef(null);
-  const [savedRecipes, setSavedRecipes] = useState([]);
+  const [meals, setMeals] = useState([]);
+  const [needs, setNeeds] = useState([]);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    const draggable = new Draggable(savedRef.current, {
-      itemSelector: ".fb-saved-recipe",
-      eventData: (el) => ({ title: el.getAttribute("title"), id: el.getAttribute("data-id") })
-    });
-    return () => draggable.destroy();
+  const load = useCallback(() => {
+    const today = todayString();
+    return Promise.all([
+      axios.get(`/api/meals?local_date=${today}`),
+      axios.get(`/api/meals/needs?local_date=${today}`)
+    ]).then(([mealsResponse, needsResponse]) => {
+      setMeals(mealsResponse.data);
+      setNeeds(needsResponse.data);
+    }).catch(() => setError("Could not load your meal plan. Please refresh to try again."));
   }, []);
 
-  const eventClick = ({ event }) => {
+  useEffect(() => { load(); }, [load]);
+
+  const showMeal = ({ event }) => {
+    const meal = meals.find((m) => String(m.id) === event.id);
+    if (!meal) return;
+    const { recipe } = meal;
+    const needFor = (name) => needs.find((n) => n.meal_id === meal.id && n.name.toLowerCase() === name.toLowerCase());
+    const status = (name) => {
+      const need = needFor(name);
+      if (!need) return "";
+      return need.on_list ? ' <em class="is-listed">(on your list)</em>' : " <em>(to get)</em>";
+    };
+    const html = `
+      <div class="fb-meal-popup">
+        <p>${escapeHtml(formatDayLabel(meal.date))}${recipe.minutes ? ` · ${recipe.minutes} min` : ""}${recipe.servings ? ` · serves ${recipe.servings}` : ""}</p>
+        <h4>Ingredients</h4>
+        <ul>${recipe.ingredients.map((i) => `<li>${i.amount ? `<strong>${escapeHtml(i.amount)}</strong> ` : ""}${escapeHtml(i.name)}${status(i.name)}</li>`).join("")}</ul>
+        <h4>Steps</h4>
+        <ol>${recipe.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ol>
+      </div>`;
     Alert.fire({
-      title: event.title,
+      title: escapeHtml(meal.title),
+      html,
       showCancelButton: true,
       confirmButtonColor: "#C2421F",
       cancelButtonColor: "#2BB39A",
       confirmButtonText: "Remove from calendar",
       cancelButtonText: "Close"
     }).then((result) => {
-      if (result.value) event.remove();
+      if (result.value) {
+        axios.delete(`/api/meals/${meal.id}`).then(load).catch(() => setError("Could not remove that meal."));
+      }
     });
   };
+
+  const moveMeal = ({ event, revert }) => {
+    const date = todayString(event.start);
+    axios.patch(`/api/meals/${event.id}`, { date, local_date: todayString() })
+      .then(load)
+      .catch(() => { revert(); setError("Could not move that meal."); });
+  };
+
+  const upcoming = meals.filter((meal) => daysUntil(meal.date) >= 0).slice(0, 8);
+  const toGetCount = needs.filter((n) => !n.on_list).length;
 
   return (
     <main className="fb-page">
       <header className="fb-page-header">
         <h1>Calendar</h1>
-        <p>Plan your meals for the week.</p>
+        <p>Plan your meals. Add recipes from the Recipes page, then drag them to move them.</p>
       </header>
+      {error && <p className="fb-banner fb-banner-inline" role="alert">{error}</p>}
       <div className="fb-calendar-layout">
-        <section className="fb-card" aria-labelledby="saved-recipes-title">
+        <section className="fb-card" aria-labelledby="upcoming-title">
           <div className="fb-card-header">
-            <h2 id="saved-recipes-title"><span className="fb-card-icon" aria-hidden="true">📌</span>Saved recipes</h2>
+            <h2 id="upcoming-title"><span className="fb-card-icon" aria-hidden="true">📌</span>Upcoming</h2>
           </div>
-          <div ref={savedRef}>
-            {savedRecipes.length === 0 ? (
-              <p className="fb-empty">Saving recipes is coming soon. Then you'll drag them onto a day to plan your week.</p>
-            ) : savedRecipes.map((recipe) => (
-              <div key={recipe.id} className="fb-saved-recipe" title={recipe.title} data-id={recipe.id}>
-                <span>{recipe.title}</span>
-                <button type="button" className="fb-icon-btn" aria-label={`Remove ${recipe.title}`}
-                  onClick={() => setSavedRecipes(savedRecipes.filter((r) => r.id !== recipe.id))}>×</button>
-              </div>
-            ))}
-          </div>
+          {upcoming.length === 0 ? (
+            <p className="fb-empty">No meals planned yet. Find a recipe and choose "Add to calendar".</p>
+          ) : (
+            <ul className="fb-soon-list">
+              {upcoming.map((meal) => (
+                <li key={meal.id}>
+                  <div>
+                    <div className="fb-soon-name">{meal.title}</div>
+                    <div className="fb-soon-meta">{formatDayLabel(meal.date)}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          {toGetCount > 0 && (
+            <Link to="/shopping" className="fb-btn-ghost fb-btn-sm" style={{ marginTop: 12 }}>
+              {toGetCount} {toGetCount === 1 ? "ingredient" : "ingredients"} to get
+            </Link>
+          )}
+          <p className="fb-note-text" style={{ marginTop: 14 }}>
+            <Link to="/recipes" className="fb-link">Find recipes to plan →</Link>
+          </p>
         </section>
         <section className="fb-card fb-calendar" aria-label="Meal calendar">
           <FullCalendar
             defaultView="dayGridMonth"
-            header={{ left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek,timeGridDay" }}
-            buttonText={{ today: "Today", month: "Month", week: "Week", day: "Day" }}
+            header={{ left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek" }}
+            buttonText={{ today: "Today", month: "Month", week: "Week" }}
             height="auto"
-            eventDurationEditable={false}
+            allDaySlot={true}
             editable={true}
-            droppable={true}
+            eventDurationEditable={false}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            eventClick={eventClick}
+            events={meals.map((meal) => ({ id: String(meal.id), title: meal.title, start: meal.date, allDay: true }))}
+            eventClick={showMeal}
+            eventDrop={moveMeal}
           />
         </section>
       </div>

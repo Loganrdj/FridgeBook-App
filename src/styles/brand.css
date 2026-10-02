@@ -434,10 +434,34 @@ html { scroll-padding-top: 120px; }
 .fb-recipe-ingredients .is-missing { color: var(--fb-ink); }
 .fb-recipe-ingredients .is-have { color: var(--fb-ink-soft); }
 .fb-recipe-steps summary { cursor: pointer; font-weight: 700; color: var(--fb-mint-dark); }
-.fb-recipe-steps ol { margin: 10px 0 0; padding-left: 20px; display: grid; gap: 8px; line-height: 1.5; }
+.fb-recipe-steps ol { margin: 10px 0 0; padding-left: 22px; line-height: 1.5; list-style: decimal; }
+.fb-recipe-steps li + li { margin-top: 8px; }
+.fb-recipe-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.fb-plan-form { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+.fb-plan-form .fb-field { flex: 1; min-width: 150px; }
+.fb-history-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.fb-history-batch { margin-bottom: 28px; }
+.fb-history-title { font-size: 1.1rem; margin-bottom: 12px !important; text-transform: capitalize; }
 .fb-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---------- Shopping ---------- */
+.fb-stack { display: grid; gap: 20px; align-content: start; }
+.fb-meal-group { padding-top: 6px; }
+.fb-meal-group + .fb-meal-group { margin-top: 10px; border-top: 1px solid #F3ECDF; padding-top: 14px; }
+.fb-meal-title { font-size: 1rem; }
+.fb-need { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid #F3ECDF; flex-wrap: wrap; }
+.fb-need:last-child { border-bottom: none; }
+.fb-need .fb-badge { margin-top: 4px; }
+.fb-meal-popup { text-align: left; font-family: var(--fb-font-body); color: var(--fb-ink); }
+.fb-meal-popup h4 { margin: 14px 0 6px; font-family: var(--fb-font-display); font-size: 1rem; }
+.fb-meal-popup ul, .fb-meal-popup ol { margin: 0; padding-left: 22px; }
+.fb-meal-popup ol { list-style: decimal; }
+.fb-meal-popup ul { list-style: disc; }
+.fb-meal-popup li + li { margin-top: 4px; }
+.fb-meal-popup em.is-listed { color: #1E6E5E; }
+.swal2-popup .swal2-title { font-family: var(--fb-font-display); color: var(--fb-ink); }
+.fb-link { color: var(--fb-mint-dark) !important; font-weight: 700; }
+.fb-meal-popup em { color: #A8371B; font-style: normal; font-weight: 700; }
 .fb-grid-shopping { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: start; }
 .fb-shop-item {
   display: grid;

@@ -2,7 +2,15 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import ShoppingList from './ShoppingList';
 import { GlobalContext } from '../context/GlobalState';
-import { addDays } from '../utils/dates';
+import { addDays, todayString } from '../utils/dates';
+import axios from 'axios';
+
+jest.mock('axios', () => ({ get: jest.fn(), post: jest.fn() }));
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  axios.get.mockResolvedValue({ data: [] });
+});
 
 const bananas = { id: 1, name: 'Bananas', quantity: 6, note: 'ripe', checked: false, source: 'manual' };
 const milk = { id: 2, name: 'Milk', quantity: 1, note: null, checked: true, source: 'kitchen' };
@@ -15,6 +23,7 @@ function setup(shopping = [bananas, milk, rice], overrides = {}) {
     deleteShoppingItem: jest.fn(),
     clearCheckedShopping: jest.fn(),
     moveShoppingToKitchen: jest.fn().mockResolvedValue(true),
+    addShoppingItems: jest.fn().mockResolvedValue(true),
     ...overrides
   };
   render(
@@ -89,4 +98,51 @@ it('keeps the put-away form open if moving fails', async () => {
   fireEvent.submit(putAway);
   await waitFor(() => expect(moveShoppingToKitchen).toHaveBeenCalled());
   expect(screen.getByRole('form', { name: 'Put away' })).toBeInTheDocument();
+});
+
+describe('for planned meals', () => {
+  const needs = [
+    { meal_id: 4, meal_title: 'Shrimp pasta', date: addDays(2), name: 'shrimp', amount: '1 lb', reason: 'missing', expires: null, on_list: false },
+    { meal_id: 4, meal_title: 'Shrimp pasta', date: addDays(2), name: 'parsley', amount: null, reason: 'expires_before', expires: addDays(1), on_list: false },
+    { meal_id: 4, meal_title: 'Shrimp pasta', date: addDays(2), name: 'pasta', amount: '8 oz', reason: 'missing', expires: null, on_list: true }
+  ];
+
+  it('lists what planned meals need, separately from the list', async () => {
+    axios.get.mockResolvedValue({ data: needs });
+    setup();
+    const section = await screen.findByRole('region', { name: 'For planned meals' });
+    expect(axios.get).toHaveBeenCalledWith(`/api/meals/needs?local_date=${todayString()}`);
+    const group = within(section).getByRole('group', { name: /^Shrimp pasta, / });
+    expect(within(group).getAllByText('Not in your kitchen')).toHaveLength(2);
+    expect(within(group).getByText(/^Yours expires /)).toBeInTheDocument();
+    expect(within(group).getByText('On your list ✓')).toBeInTheDocument();
+    expect(within(section).getByRole('button', { name: 'Add all (2)' })).toBeInTheDocument();
+  });
+
+  it('adds one, adds all, or dismisses with "I have it"', async () => {
+    axios.get.mockResolvedValue({ data: needs });
+    axios.post.mockResolvedValue({ data: {} });
+    const { addShoppingItem, addShoppingItems } = setup();
+    const section = await screen.findByRole('region', { name: 'For planned meals' });
+
+    fireEvent.click(within(section).getByRole('button', { name: 'Add shrimp to the shopping list' }));
+    await waitFor(() => expect(addShoppingItem).toHaveBeenCalledWith({ name: 'shrimp', note: '1 lb · for Shrimp pasta', source: 'meal' }, { notify: true }));
+
+    await waitFor(() => expect(within(section).getByRole('button', { name: 'Add all (2)' })).not.toBeDisabled());
+    fireEvent.click(within(section).getByRole('button', { name: 'Add all (2)' }));
+    await waitFor(() => expect(addShoppingItems).toHaveBeenCalledWith([
+      { name: 'shrimp', note: '1 lb · for Shrimp pasta', source: 'meal' },
+      { name: 'parsley', note: 'for Shrimp pasta', source: 'meal' }
+    ]));
+
+    await waitFor(() => expect(within(section).getByRole('button', { name: 'I have parsley' })).not.toBeDisabled());
+    fireEvent.click(within(section).getByRole('button', { name: 'I have parsley' }));
+    await waitFor(() => expect(axios.post).toHaveBeenCalledWith('/api/meals/4/dismiss', { name: 'parsley' }));
+  });
+
+  it('stays hidden when nothing is needed', async () => {
+    setup();
+    await waitFor(() => expect(axios.get).toHaveBeenCalled());
+    expect(screen.queryByRole('region', { name: 'For planned meals' })).toBeNull();
+  });
 });

@@ -23,7 +23,7 @@ test("the baseline keeps existing tables and data (like production)", async () =
 
   const [users] = await t.db.sequelize.query(`SELECT name FROM "Users"`);
   assert.deepEqual(users, [{ name: "Existing user" }]);
-  assert.deepEqual(await tables(), ["AiUsages", "Foods", "SequelizeMeta", "ShoppingItems", "Users", "session"]);
+  assert.deepEqual(await tables(), ["AiUsages", "Foods", "MealPlans", "SequelizeMeta", "ShoppingItems", "Users", "session"]);
 });
 
 test("the tables match the models", async () => {

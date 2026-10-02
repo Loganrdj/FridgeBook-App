@@ -5,7 +5,7 @@ const { parseIngredient, serialize: serializeIngredient } = require("./apiRoutes
 
 const MAX_QUANTITY = 9999;
 const MAX_BATCH = 100;
-const SOURCES = ["manual", "kitchen", "recipe"];
+const SOURCES = ["manual", "kitchen", "recipe", "meal"];
 
 router.use(requireAuth);
 

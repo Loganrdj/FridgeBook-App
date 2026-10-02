@@ -13,6 +13,9 @@ module.exports = function (sequelize, DataTypes) {
         Users.hasMany(models.AiUsages,{
             onDelete:"cascade"
         });
+        Users.hasMany(models.MealPlans,{
+            onDelete:"cascade"
+        });
     }
     return Users;
 };

@@ -18,10 +18,11 @@ test("/profile is empty when logged out", async () => {
   assert.equal(res.text, "");
 });
 
-test("/profile returns only the user's name", async () => {
+test("/profile returns only the user's id and name", async () => {
   const { cookie } = await t.login("Alice Smith");
   const res = await t.request("GET", "/profile", { cookie });
-  assert.deepEqual(res.body, { user_name: "Alice Smith" });
+  assert.deepEqual(res.body, { user_id: res.body.user_id, user_name: "Alice Smith" });
+  assert.ok(Number.isInteger(res.body.user_id));
 });
 
 test("sign-in sends the user to Google with the configured callback", async () => {

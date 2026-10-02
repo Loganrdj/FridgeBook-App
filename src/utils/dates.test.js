@@ -1,4 +1,4 @@
-import { formatDate, daysUntil, todayString, formatShortDate, addDays, expiryStatus } from './dates';
+import { formatDate, daysUntil, todayString, formatShortDate, addDays, expiryStatus, formatDayLabel, msUntilMidnight, formatDuration } from './dates';
 
 describe('formatDate', () => {
   it('shows the date the user picked, with a 1-based month', () => {
@@ -68,5 +68,16 @@ describe('expiryStatus', () => {
     ['', 'none', 'No date']
   ])('%s -> %s "%s"', (value, tone, label) => {
     expect(expiryStatus(value, now)).toMatchObject({ tone, label });
+  });
+});
+
+describe('day labels and countdowns', () => {
+  it('formats a weekday label', () => {
+    expect(formatDayLabel('2026-10-02')).toBe('Fri, Oct 2');
+  });
+  it('counts down to local midnight', () => {
+    expect(msUntilMidnight(new Date(2026, 9, 2, 16, 48))).toBe((7 * 60 + 12) * 60000);
+    expect(formatDuration((7 * 60 + 12) * 60000)).toBe('7h 12m');
+    expect(formatDuration(30 * 1000)).toBe('1m');
   });
 });

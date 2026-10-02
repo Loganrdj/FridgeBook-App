@@ -23,6 +23,21 @@ function todayString() {
     return new Date().toISOString().slice(0, 10);
 }
 
+// The user's own calendar date, sent by the browser as "YYYY-MM-DD" so days roll
+// over at their midnight. Anything missing or more than a day off the server's
+// date falls back to the server's (UTC) date.
+function localDate(value) {
+    const server = todayString();
+    if (!isValidDate(value)) return server;
+    const diff = Math.abs(new Date(value + "T00:00:00Z") - new Date(server + "T00:00:00Z")) / 86400000;
+    return diff <= 1 ? value : server;
+}
+
+// Whole days from one "YYYY-MM-DD" date to another
+function daysBetween(from, to) {
+    return Math.round((new Date(to + "T00:00:00Z") - new Date(from + "T00:00:00Z")) / 86400000);
+}
+
 // A positive whole id from a route param, or null
 function parseId(value) {
     const id = Number(value);
@@ -36,4 +51,4 @@ function handleError(res, label) {
     };
 }
 
-module.exports = { requireAuth, isValidDate, toBoolean, todayString, parseId, handleError };
+module.exports = { requireAuth, isValidDate, toBoolean, todayString, localDate, daysBetween, parseId, handleError };

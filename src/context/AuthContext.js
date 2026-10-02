@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 
-const AuthContext = createContext({ user: null, loading: true });
+export const AuthContext = createContext({ user: null, loading: true });
 
 // Asks the server who is logged in (an empty /profile response means nobody)
 export const AuthProvider = ({ children }) => {
@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }) => {
     axios.get('/profile')
       .then((response) => {
         const name = response.data && response.data.user_name;
-        setState({ user: name ? { name } : null, loading: false });
+        setState({ user: name ? { id: response.data.user_id, name } : null, loading: false });
       })
       .catch(() => setState({ user: null, loading: false }));
   }, []);

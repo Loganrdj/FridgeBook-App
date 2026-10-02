@@ -58,3 +58,24 @@ export function expiryStatus(value, now = new Date()) {
   if (days < 365) return { days, tone: 'ok', label: `In ${Math.round(days / 30)} months` };
   return { days, tone: 'ok', label: 'In over a year' };
 }
+
+// "Fri, Oct 3"
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+export function formatDayLabel(value) {
+  const date = parseLocalDate(value);
+  if (!date) return 'No date';
+  return `${WEEKDAYS[date.getDay()]}, ${MONTHS[date.getMonth()]} ${date.getDate()}`;
+}
+
+// Milliseconds until the next local midnight
+export function msUntilMidnight(now = new Date()) {
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return midnight - now;
+}
+
+// "7h 12m", or "12m" under an hour
+export function formatDuration(ms) {
+  const minutes = Math.max(1, Math.ceil(ms / 60000));
+  const hours = Math.floor(minutes / 60);
+  return hours ? `${hours}h ${minutes % 60}m` : `${minutes}m`;
+}

@@ -2,7 +2,7 @@ import React, { createContext, useReducer, useEffect, useCallback } from 'react'
 import axios from 'axios';
 import AppReducer from './AppReducer';
 import { useAuth } from './AuthContext';
-import { todayString } from '../utils/dates';
+import { todayString, formatDayLabel } from '../utils/dates';
 
 // Before accounts, fridge items lived in this browser under this key
 const LEGACY_INGREDIENTS_KEY = 'ingredients';
@@ -132,6 +132,28 @@ export const GlobalProvider = ({ children }) => {
     }
   }, []);
 
+  // Puts a recipe on the meal calendar; its ingredients show up under "For planned meals" on Shopping
+  const planMeal = useCallback(async (recipe, date) => {
+    try {
+      const { title, description, minutes, servings, ingredients, steps } = recipe;
+      const response = await axios.post('/api/meals', {
+        date,
+        local_date: todayString(),
+        recipe: { title, description, minutes, servings, ingredients: ingredients.map(({ name, amount }) => ({ name, amount })), steps }
+      });
+      const needs = response.data.needs;
+      dispatch({
+        type: 'SET_NOTICE',
+        payload: `Added ${title} to your calendar for ${formatDayLabel(date)}.` +
+          (needs ? ` ${needs} ${needs === 1 ? 'ingredient' : 'ingredients'} to get, listed on Shopping.` : ' You have everything for it.')
+      });
+      return true;
+    } catch (err) {
+      dispatch({ type: 'SET_ERROR', payload: errorMessage(err, 'Could not add that to your calendar.') });
+      return false;
+    }
+  }, []);
+
   const updateShoppingItem = useCallback(async (id, fields) => {
     try {
       const response = await axios.patch(`/api/shopping/${id}`, fields);
@@ -239,6 +261,7 @@ export const GlobalProvider = ({ children }) => {
         shoppingLoaded: state.shoppingLoaded,
         addShoppingItem,
         addShoppingItems,
+        planMeal,
         updateShoppingItem,
         deleteShoppingItem,
         clearCheckedShopping,

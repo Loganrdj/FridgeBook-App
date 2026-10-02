@@ -13,9 +13,11 @@ const spinach = { id: 3, name: 'Spinach', quantity: 1, date_start: addDays(-5), 
 
 function mockServer({ user = null, ingredients = [] } = {}) {
   axios.get.mockImplementation((url) => {
-    if (url === '/profile') return Promise.resolve({ data: user ? { user_name: user } : '' });
+    if (url === '/profile') return Promise.resolve({ data: user ? { user_id: 1, user_name: user } : '' });
     if (url === '/api/ingredient') return Promise.resolve({ data: ingredients });
     if (url === '/api/shopping') return Promise.resolve({ data: [] });
+    if (url.startsWith('/api/recipes/usage')) return Promise.resolve({ data: { limit: 20, remaining: 20 } });
+    if (url.startsWith('/api/meals')) return Promise.resolve({ data: [] });
     return Promise.reject(new Error(`unexpected GET ${url}`));
   });
 }
