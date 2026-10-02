@@ -173,3 +173,35 @@ describe("moving bought items to the kitchen", () => {
     assert.equal((await post(new Array(101).fill({ id: item.id }))).status, 422);
   });
 });
+
+describe("adding several items at once", () => {
+  test("adds and merges, returning the whole list", async () => {
+    const { cookie } = await t.login("Alice");
+    await add(cookie, { name: "Parmesan" });
+    const res = await t.request("POST", "/api/shopping/bulk", {
+      cookie, body: { items: [{ name: "parmesan", note: "1/4 cup", source: "recipe" }, { name: "Lemons", quantity: 2, source: "recipe" }] }
+    });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.added, 2);
+    assert.deepEqual(res.body.items.map((i) => [i.name, i.quantity, i.source]), [["Parmesan", 2, "manual"], ["Lemons", 2, "recipe"]]);
+  });
+
+  test("validates every item and adds nothing if one is bad", async () => {
+    const { cookie } = await t.login("Alice");
+    const res = await t.request("POST", "/api/shopping/bulk", { cookie, body: { items: [{ name: "Fine" }, { name: "" }] } });
+    assert.equal(res.status, 422);
+    assert.match(res.body.errors[0], /^item 2:/);
+    assert.equal((await list(cookie)).length, 0);
+    assert.equal((await t.request("POST", "/api/shopping/bulk", { cookie, body: { items: [] } })).status, 422);
+  });
+
+  test("requires login and stays per user", async () => {
+    assert.equal((await t.request("POST", "/api/shopping/bulk", { body: { items: [{ name: "X" }] } })).status, 401);
+    const alice = await t.login("Alice");
+    const bob = await t.login("Bob");
+    await add(bob.cookie, { name: "Tea" });
+    const res = await t.request("POST", "/api/shopping/bulk", { cookie: alice.cookie, body: { items: [{ name: "Tea" }] } });
+    assert.deepEqual(res.body.items.map((i) => i.name), ["Tea"]);
+    assert.equal((await list(bob.cookie))[0].quantity, 1);
+  });
+});

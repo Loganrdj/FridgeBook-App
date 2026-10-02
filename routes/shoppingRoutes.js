@@ -109,6 +109,47 @@ router.route("/")
     });
 
 /**
+ * route = /api/shopping/bulk
+ * Adds several items at once (e.g. a recipe's missing ingredients), merging
+ * with unchecked items already on the list. Returns the whole list.
+ */
+router.post("/bulk", async (req, res) => {
+    const entries = Array.isArray(req.body && req.body.items) ? req.body.items : null;
+    if (!entries || entries.length === 0) return res.status(422).json({ errors: ["items must be a non-empty array"] });
+    if (entries.length > MAX_BATCH) return res.status(422).json({ errors: [`at most ${MAX_BATCH} items`] });
+    const parsed = entries.map((entry) => parseItem(entry));
+    const errors = parsed.flatMap((p, i) => p.errors.map((e) => `item ${i + 1}: ${e}`));
+    if (errors.length) return res.status(422).json({ errors });
+
+    try {
+        await db.sequelize.transaction(async (transaction) => {
+            for (const { fields } of parsed) {
+                const existing = await db.ShoppingItems.findOne({
+                    where: {
+                        UserId: req.user.id,
+                        checked: false,
+                        name: db.sequelize.where(db.sequelize.fn("lower", db.sequelize.col("name")), fields.name.toLowerCase())
+                    },
+                    transaction
+                });
+                if (existing) {
+                    await existing.update({
+                        quantity: Math.min(MAX_QUANTITY, existing.quantity + fields.quantity),
+                        note: existing.note || fields.note || null
+                    }, { transaction });
+                } else {
+                    await db.ShoppingItems.create({ ...fields, UserId: req.user.id }, { transaction });
+                }
+            }
+        });
+        const items = await db.ShoppingItems.findAll({ where: { UserId: req.user.id }, order: [["checked", "ASC"], ["id", "ASC"]] });
+        res.status(201).json({ added: parsed.length, items: items.map(serialize) });
+    } catch (err) {
+        fail(res)(err);
+    }
+});
+
+/**
  * route = /api/shopping/checked
  * Removes every checked item ("Clear checked")
  */

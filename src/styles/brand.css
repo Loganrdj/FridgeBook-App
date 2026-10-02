@@ -416,12 +416,26 @@ html { scroll-padding-top: 120px; }
 .fb-app .react-autosuggest__suggestion--highlighted { background: var(--fb-mint-tint); }
 .fb-chosen { list-style: none; margin: 14px 0 0; padding: 0; }
 .fb-note-text { margin-bottom: 14px !important; color: var(--fb-ink-soft); font-weight: 600; }
-.fb-recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
-.fb-recipe-card { padding: 0; overflow: hidden; }
-.fb-recipe-card img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #F3ECDF; }
-.fb-recipe-body { padding: 14px 16px 18px; }
-.fb-recipe-body h3 { font-size: 1.1rem; text-transform: capitalize; }
-.fb-recipe-missing { margin-top: 6px !important; color: var(--fb-ink-soft); font-size: 0.9rem; }
+.fb-recipe-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 16px; }
+.fb-banner-inline { max-width: none; margin: 0 0 20px; }
+.fb-recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; align-items: start; }
+.fb-recipe-card { display: grid; gap: 12px; }
+.fb-recipe-card h3 { font-size: 1.2rem; }
+.fb-recipe-desc { color: var(--fb-ink-soft); }
+.fb-recipe-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-weight: 700; font-size: 0.88rem; color: var(--fb-ink-soft); }
+.fb-recipe-ingredients { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.fb-recipe-ingredients li { display: flex; gap: 8px; align-items: baseline; font-size: 0.95rem; }
+.fb-recipe-mark {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 20px; height: 20px; border-radius: 50%; font-size: 0.75rem; font-weight: 700;
+}
+.fb-recipe-ingredients .is-have .fb-recipe-mark { background: var(--fb-mint-tint); color: #1E6E5E; }
+.fb-recipe-ingredients .is-missing .fb-recipe-mark { background: #FFE3DA; color: #A8371B; }
+.fb-recipe-ingredients .is-missing { color: var(--fb-ink); }
+.fb-recipe-ingredients .is-have { color: var(--fb-ink-soft); }
+.fb-recipe-steps summary { cursor: pointer; font-weight: 700; color: var(--fb-mint-dark); }
+.fb-recipe-steps ol { margin: 10px 0 0; padding-left: 20px; display: grid; gap: 8px; line-height: 1.5; }
+.fb-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---------- Shopping ---------- */
 .fb-grid-shopping { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: start; }

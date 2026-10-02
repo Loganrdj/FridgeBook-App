@@ -23,7 +23,7 @@ test("the baseline keeps existing tables and data (like production)", async () =
 
   const [users] = await t.db.sequelize.query(`SELECT name FROM "Users"`);
   assert.deepEqual(users, [{ name: "Existing user" }]);
-  assert.deepEqual(await tables(), ["Foods", "SequelizeMeta", "ShoppingItems", "Users", "session"]);
+  assert.deepEqual(await tables(), ["AiUsages", "Foods", "SequelizeMeta", "ShoppingItems", "Users", "session"]);
 });
 
 test("the tables match the models", async () => {
@@ -43,11 +43,13 @@ test("running migrations again does nothing", async () => {
   assert.equal((await t.umzug.pending()).length, 0);
 });
 
-test("the shopping list migration can be undone and redone", async () => {
-  await t.umzug.down();
-  assert.ok(!(await tables()).includes("ShoppingItems"));
+test("the newest migration can be undone and redone", async () => {
+  const before = await tables();
+  const [undone] = await t.umzug.down();
+  assert.notEqual(undone.name, "20261001000000-baseline.js");
+  assert.ok((await tables()).length < before.length, `${undone.name} should drop a table`);
   await t.umzug.up();
-  assert.ok((await tables()).includes("ShoppingItems"));
+  assert.deepEqual(await tables(), before);
 });
 
 test("the baseline can't be undone (it would drop all data)", async () => {

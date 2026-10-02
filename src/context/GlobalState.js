@@ -118,6 +118,20 @@ export const GlobalProvider = ({ children }) => {
     }
   }, []);
 
+  // Several at once (e.g. a recipe's missing ingredients); the server merges duplicates
+  const addShoppingItems = useCallback(async (items) => {
+    try {
+      const response = await axios.post('/api/shopping/bulk', { items });
+      dispatch({ type: 'SET_SHOPPING', payload: response.data.items });
+      const count = items.length;
+      dispatch({ type: 'SET_NOTICE', payload: `Added ${count} ${count === 1 ? 'item' : 'items'} to your shopping list.` });
+      return true;
+    } catch (err) {
+      dispatch({ type: 'SET_ERROR', payload: errorMessage(err, 'Could not add those to your shopping list.') });
+      return false;
+    }
+  }, []);
+
   const updateShoppingItem = useCallback(async (id, fields) => {
     try {
       const response = await axios.patch(`/api/shopping/${id}`, fields);
@@ -224,6 +238,7 @@ export const GlobalProvider = ({ children }) => {
         shopping: state.shopping,
         shoppingLoaded: state.shoppingLoaded,
         addShoppingItem,
+        addShoppingItems,
         updateShoppingItem,
         deleteShoppingItem,
         clearCheckedShopping,

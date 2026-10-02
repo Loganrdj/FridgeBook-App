@@ -10,6 +10,9 @@ module.exports = function (sequelize, DataTypes) {
         Users.hasMany(models.ShoppingItems,{
             onDelete:"cascade"
         });
+        Users.hasMany(models.AiUsages,{
+            onDelete:"cascade"
+        });
     }
     return Users;
 };
