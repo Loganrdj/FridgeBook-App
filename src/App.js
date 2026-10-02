@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GlobalProvider, GlobalContext } from './context/GlobalState';
 import AppNav from "./components/AppNav"
@@ -17,8 +17,29 @@ import {
   Redirect
 } from "react-router-dom";
 
+// Shown while we check who's logged in. The free server sleeps when idle, so the
+// first visit after a quiet spell can take up to a minute: if loading takes more
+// than a moment, say why (fast loads never see the note).
+export const SLOW_LOAD_NOTE_DELAY_MS = 1000;
+
 function Splash() {
-  return <div className="fb-splash" aria-label="Loading"><Logo /></div>;
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setSlow(true), SLOW_LOAD_NOTE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="fb-splash" aria-label="Loading">
+      <Logo />
+      {slow && (
+        <p className="fb-splash-note" role="status">
+          FridgeBook runs on a free server and database, so it's starting up. This first load can take
+          up to a minute. Once it's running, everything loads much faster.
+        </p>
+      )}
+    </div>
+  );
 }
 
 function ErrorBanner() {

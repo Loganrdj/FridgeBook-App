@@ -1,7 +1,8 @@
 import React from 'react';
 import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import axios from 'axios';
-import App from './App';
+import App, { SLOW_LOAD_NOTE_DELAY_MS } from './App';
+import { act } from 'react-dom/test-utils';
 import { addDays } from './utils/dates';
 
 jest.mock('axios', () => ({ get: jest.fn(), post: jest.fn(), patch: jest.fn(), delete: jest.fn() }));
@@ -121,5 +122,17 @@ describe('kitchen to shopping list', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Add Milk to the shopping list' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Added Milk to your shopping list.');
     expect(axios.post).toHaveBeenCalledWith('/api/shopping', { name: 'Milk', quantity: 1, source: 'kitchen' });
+  });
+});
+
+describe('loading screen', () => {
+  it('explains a slow first load, but only once it is actually slow', () => {
+    jest.useFakeTimers();
+    axios.get.mockReturnValue(new Promise(() => {})); // the server is still waking up
+    visit('/');
+    expect(screen.queryByText(/free server and database/i)).toBeNull();
+    act(() => { jest.advanceTimersByTime(SLOW_LOAD_NOTE_DELAY_MS); });
+    expect(screen.getByRole('status')).toHaveTextContent(/free server and database, so it's starting up/i);
+    jest.useRealTimers();
   });
 });
