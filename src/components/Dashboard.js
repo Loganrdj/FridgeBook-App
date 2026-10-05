@@ -5,6 +5,7 @@ import ExpiryBadge from './ExpiryBadge';
 import { GlobalContext } from '../context/GlobalState';
 import { useAuth } from '../context/AuthContext';
 import { daysUntil, formatShortDate } from '../utils/dates';
+import { isGlutenRisk } from './GlutenBadge';
 
 function greeting(now = new Date()) {
     const hour = now.getHours();
@@ -27,6 +28,9 @@ function Dashboard() {
         { label: 'Use within 3 days', value: soon.length, tone: 'fb-stat-soon' },
         { label: 'Expired', value: expired.length, tone: 'fb-stat-expired' }
     ];
+    if (user && user.celiac_mode) {
+        stats.push({ label: 'Contain gluten', value: ingredients.filter((i) => isGlutenRisk(i.gluten_status, user.celiac_strict)).length, tone: 'fb-stat-expired' });
+    }
     // expired first, then soonest; ingredients are already sorted by date
     const useSoon = [...expired, ...soon];
 

@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const db = require("../models");
 const { requireAuth, isValidDate, toBoolean, todayString, parseId, handleError: logAndFail } = require("./validation");
+const { STATUSES: GLUTEN_STATUSES, classifyName } = require("../lib/gluten");
 
 const MAX_QUANTITY = 9999;
 const MAX_IMPORT = 200;
@@ -29,6 +30,19 @@ function parseIngredient(body, { partial = false } = {}) {
         const name = typeof body.name === "string" ? body.name.trim() : "";
         if (!name || name.length > 100) errors.push("name must be 1-100 characters");
         else fields.name = name;
+    }
+
+    // A (re)named item gets a gluten label for Celiac Mode: one supplied by a
+    // receipt scan, or from the rules (null = still to be checked)
+    if (fields.name) {
+        if (GLUTEN_STATUSES.includes(body.gluten_status)) {
+            fields.gluten_status = body.gluten_status;
+            fields.gluten_reason = typeof body.gluten_reason === "string" ? body.gluten_reason.trim().slice(0, 200) || null : null;
+        } else {
+            const rule = classifyName(fields.name);
+            fields.gluten_status = rule ? rule.status : null;
+            fields.gluten_reason = rule ? rule.reason : null;
+        }
     }
 
     if (!partial || body.quantity !== undefined) {
@@ -67,7 +81,9 @@ function serialize(food) {
         quantity: food.quantity,
         date_start: food.date_start,
         date_expire: food.date_expire,
-        fridge_bool: food.fridge_bool
+        fridge_bool: food.fridge_bool,
+        gluten_status: food.gluten_status || null,
+        gluten_reason: food.gluten_reason || null
     };
 }
 

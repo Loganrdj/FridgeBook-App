@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import ExpiryBadge from './ExpiryBadge';
+import GlutenBadge, { isGlutenRisk } from './GlutenBadge';
+import { useAuth } from '../context/AuthContext';
 import { formatShortDate } from '../utils/dates';
 
 // One kitchen item: −/+ quantity, an expiry badge, and inline editing
 function InventoryItem({ item, updateIngredient, changeQuantity, deleteIngredient, addShoppingItem }) {
+    const { user } = useAuth();
+    const glutenRisk = !!(user && user.celiac_mode && isGlutenRisk(item.gluten_status, user.celiac_strict));
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(null);
     const [saving, setSaving] = useState(false);
@@ -71,10 +75,11 @@ function InventoryItem({ item, updateIngredient, changeQuantity, deleteIngredien
     }
 
     return (
-        <li className="fb-item">
+        <li className={`fb-item${glutenRisk ? ' has-gluten' : ''}`}>
             <div>
                 <div className="fb-item-name">{item.name}</div>
                 <div className="fb-item-date">Expires {formatShortDate(item.date_expire)}</div>
+                <GlutenBadge status={item.gluten_status} reason={item.gluten_reason} />
             </div>
             <div className="fb-stepper">
                 <button type="button" className="fb-icon-btn" aria-label={`One less ${item.name}`} onClick={() => changeQuantity(item.id, -1)}>−</button>

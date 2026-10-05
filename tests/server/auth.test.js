@@ -18,10 +18,10 @@ test("/profile is empty when logged out", async () => {
   assert.equal(res.text, "");
 });
 
-test("/profile returns only the user's id and name", async () => {
+test("/profile returns the user's id, name and settings", async () => {
   const { cookie } = await t.login("Alice Smith");
   const res = await t.request("GET", "/profile", { cookie });
-  assert.deepEqual(res.body, { user_id: res.body.user_id, user_name: "Alice Smith" });
+  assert.deepEqual(res.body, { user_id: res.body.user_id, user_name: "Alice Smith", celiac_mode: false, celiac_strict: false });
   assert.ok(Number.isInteger(res.body.user_id));
 });
 

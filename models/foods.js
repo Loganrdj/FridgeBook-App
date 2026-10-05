@@ -5,7 +5,10 @@ module.exports = function (sequelize, DataTypes) {
         // Plain calendar dates ("YYYY-MM-DD"), so they don't shift with time zones
         date_start: { type: DataTypes.DATEONLY, allowNull: false },
         date_expire: { type: DataTypes.DATEONLY, allowNull: false },
-        fridge_bool: { type: DataTypes.BOOLEAN, allowNull: false }
+        fridge_bool: { type: DataTypes.BOOLEAN, allowNull: false },
+        // contains | may_contain | gluten_free | unknown; null = not checked yet
+        gluten_status: { type: DataTypes.STRING(16), allowNull: true },
+        gluten_reason: { type: DataTypes.STRING(200), allowNull: true }
     }, {
         indexes: [{ fields: ["UserId"] }]
     });

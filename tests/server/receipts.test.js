@@ -72,7 +72,7 @@ test("cleans odd model output", async () => {
   ] } });
   const { cookie } = await t.login("Alice");
   const res = await parse(cookie, { lines: ["YOGURT"], local_date: day(0) });
-  assert.deepEqual(res.body.items, [{ name: "Yogurt", quantity: 99, fridge_bool: true, frozen: false, date_expire: day(730), confident: true, line: null }]);
+  assert.deepEqual(res.body.items, [{ name: "Yogurt", quantity: 99, fridge_bool: true, frozen: false, date_expire: day(730), confident: true, line: null, gluten_status: "gluten_free", gluten_reason: "Naturally gluten-free." }]);
 });
 
 test("stops at 10 scans a day; failures don't count", async () => {
@@ -97,4 +97,19 @@ test("lets groceries through that only look like payment words", async () => {
   const { cookie } = await t.login("Alice");
   await parse(cookie, { lines: ["CASHEWS", "CARDAMOM PODS", "PINEAPPLE CHUNKS", "TORTILLA CHIPS", "AUTHENTIC SALSA"] });
   assert.equal(calls[0].prompt, "Receipt lines:\n0: CASHEWS\n1: CARDAMOM PODS\n2: PINEAPPLE CHUNKS\n3: TORTILLA CHIPS\n4: AUTHENTIC SALSA");
+});
+
+test("labels gluten on each item: rules first, then the model's assessment", async () => {
+  reply = async () => ({ data: { items: [
+    { line: 0, name: "Sourdough bread", quantity: 1, storage: "pantry", shelf_life_days: 5, confident: true, gluten: "gluten_free", gluten_reason: "wrong" },
+    { line: 1, name: "Original beef jerky", quantity: 1, storage: "pantry", shelf_life_days: 60, confident: true, gluten: "may_contain", gluten_reason: "Many jerky marinades use soy sauce made with wheat." },
+    { line: 2, name: "Snack mix", quantity: 1, storage: "pantry", shelf_life_days: 60, confident: true, gluten: "oops" }
+  ] } });
+  const { cookie } = await t.login("Alice");
+  const res = await parse(cookie, { lines: ["SOURDOUGH", "TERIYAKI JERKY", "SNACK MIX"] });
+  assert.deepEqual(res.body.items.map((i) => [i.name, i.gluten_status]), [
+    ["Sourdough bread", "contains"], ["Original beef jerky", "may_contain"], ["Snack mix", "unknown"]
+  ]);
+  assert.equal(res.body.items[1].gluten_reason, "Many jerky marinades use soy sauce made with wheat.");
+  assert.match(calls[0].system, /celiac disease/);
 });

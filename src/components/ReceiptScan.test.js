@@ -6,6 +6,7 @@ import { createWorker } from 'tesseract.js';
 import ReceiptScan from './ReceiptScan';
 import { GlobalContext } from '../context/GlobalState';
 import { todayString } from '../utils/dates';
+import { AuthContext } from '../context/AuthContext';
 
 jest.mock('axios', () => ({ get: jest.fn(), post: jest.fn() }));
 jest.mock('tesseract.js', () => ({ createWorker: jest.fn() }));
@@ -36,15 +37,17 @@ beforeEach(() => {
   global.Image = class { set src(v) { this.width = 1200; this.height = 3000; setTimeout(() => this.onload()); } };
 });
 
-function setup(overrides = {}) {
+function setup(overrides = {}, user = { id: 1, name: 'Alice', celiac_mode: false, celiac_strict: false }) {
   const value = { addIngredients: jest.fn().mockResolvedValue(2), ...overrides };
   render(
+    <AuthContext.Provider value={{ user, loading: false, updateUser: jest.fn() }}>
     <GlobalContext.Provider value={value}>
       <MemoryRouter initialEntries={['/scan']}>
         <Route path="/scan" component={ReceiptScan} />
         <Route path="/kitchen" render={() => <p>Kitchen page</p>} />
       </MemoryRouter>
     </GlobalContext.Provider>
+    </AuthContext.Provider>
   );
   return value;
 }
@@ -104,4 +107,23 @@ it('shows the daily limit message', async () => {
   choosePhoto();
   expect(await screen.findByRole('alert')).toHaveTextContent('used all 10 receipt scans');
   await waitFor(() => expect(screen.getByText('0 scans left today')).toBeInTheDocument());
+});
+
+it('in Celiac Mode, warns about gluten on the receipt and keeps the labels when adding', async () => {
+  axios.post.mockResolvedValue({ data: { ...parsed, items: [
+    { ...parsed.items[0], gluten_status: 'gluten_free', gluten_reason: 'Naturally gluten-free.' },
+    { name: 'Sourdough bread', quantity: 1, fridge_bool: false, frozen: false, date_expire: '2026-10-08', confident: true, line: 1, gluten_status: 'contains', gluten_reason: 'Bread has wheat.' },
+    { name: 'Granola', quantity: 1, fridge_bool: false, frozen: false, date_expire: '2026-12-01', confident: true, line: 2, gluten_status: 'may_contain', gluten_reason: 'Oats.' }
+  ] } });
+  const { addIngredients } = setup({}, { id: 1, name: 'Alice', celiac_mode: true, celiac_strict: false });
+  choosePhoto();
+  const alert = await screen.findByRole('alert');
+  expect(alert).toHaveTextContent('Contains gluten: Sourdough bread.');
+  expect(alert).toHaveTextContent('May contain gluten: Granola.');
+  fireEvent.change(screen.getByDisplayValue('Granola'), { target: { value: 'Gluten-free granola' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Add 3 to kitchen' }));
+  await screen.findByText('Kitchen page');
+  const sent = addIngredients.mock.calls[0][0];
+  expect(sent[1]).toMatchObject({ name: 'Sourdough bread', gluten_status: 'contains', gluten_reason: 'Bread has wheat.' });
+  expect(sent[2].gluten_status).toBeUndefined(); // renamed: the server re-checks it
 });

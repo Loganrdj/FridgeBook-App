@@ -1,4 +1,4 @@
-import React, { createContext, useReducer, useEffect, useCallback } from 'react';
+import React, { createContext, useReducer, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import AppReducer from './AppReducer';
 import { useAuth } from './AuthContext';
@@ -97,6 +97,20 @@ export const GlobalProvider = ({ children }) => {
   }, [user]);
 
   const clearError = useCallback(() => dispatch({ type: 'SET_ERROR', payload: null }), []);
+
+  // Celiac Mode: label any kitchen items that haven't been checked for gluten yet
+  // (each item is only tried once per session, so a failed check can't loop)
+  const glutenTried = useRef(new Set());
+  const celiac = !!(user && user.celiac_mode);
+  const unchecked = state.ingredients.filter((item) => !item.gluten_status && !glutenTried.current.has(item.id)).map((item) => item.id);
+  const uncheckedKey = unchecked.join(',');
+  useEffect(() => {
+    if (!celiac || !uncheckedKey) return;
+    uncheckedKey.split(',').forEach((id) => glutenTried.current.add(Number(id)));
+    axios.post('/api/gluten/classify-kitchen', { local_date: todayString() })
+      .then((response) => { if (response.data.length) dispatch({ type: 'MERGE_GLUTEN', payload: response.data }); })
+      .catch(() => {});
+  }, [celiac, uncheckedKey]);
 
   // Confirmations disappear on their own after a few seconds
   useEffect(() => {

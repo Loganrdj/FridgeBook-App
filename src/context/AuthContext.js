@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 
 export const AuthContext = createContext({ user: null, loading: true });
@@ -10,13 +10,23 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     axios.get('/profile')
       .then((response) => {
-        const name = response.data && response.data.user_name;
-        setState({ user: name ? { id: response.data.user_id, name } : null, loading: false });
+        const data = response.data || {};
+        setState({
+          user: data.user_name
+            ? { id: data.user_id, name: data.user_name, celiac_mode: !!data.celiac_mode, celiac_strict: !!data.celiac_strict }
+            : null,
+          loading: false
+        });
       })
       .catch(() => setState({ user: null, loading: false }));
   }, []);
 
-  return <AuthContext.Provider value={state}>{children}</AuthContext.Provider>;
+  // Applies changed settings (e.g. Celiac Mode) without reloading the profile
+  const updateUser = useCallback((fields) => {
+    setState((current) => (current.user ? { ...current, user: { ...current.user, ...fields } } : current));
+  }, []);
+
+  return <AuthContext.Provider value={{ ...state, updateUser }}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => useContext(AuthContext);

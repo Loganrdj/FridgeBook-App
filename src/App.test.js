@@ -11,9 +11,9 @@ const milk = { id: 1, name: 'Milk', quantity: 2, date_start: addDays(0), date_ex
 const rice = { id: 2, name: 'Rice', quantity: 1, date_start: addDays(0), date_expire: addDays(200), fridge_bool: false };
 const spinach = { id: 3, name: 'Spinach', quantity: 1, date_start: addDays(-5), date_expire: addDays(-2), fridge_bool: true };
 
-function mockServer({ user = null, ingredients = [] } = {}) {
+function mockServer({ user = null, ingredients = [], celiac = false } = {}) {
   axios.get.mockImplementation((url) => {
-    if (url === '/profile') return Promise.resolve({ data: user ? { user_id: 1, user_name: user } : '' });
+    if (url === '/profile') return Promise.resolve({ data: user ? { user_id: 1, user_name: user, celiac_mode: celiac, celiac_strict: false } : '' });
     if (url === '/api/ingredient') return Promise.resolve({ data: ingredients });
     if (url === '/api/shopping') return Promise.resolve({ data: [] });
     if (url.startsWith('/api/recipes/usage')) return Promise.resolve({ data: { limit: 20, remaining: 20 } });
@@ -28,7 +28,9 @@ function visit(path) {
 }
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  // reset, not just clear: a test's fake responses (like one that never answers) mustn't leak into the next
+  jest.resetAllMocks();
+  axios.post.mockResolvedValue({ data: [] });
   localStorage.clear();
 });
 
@@ -130,11 +132,48 @@ describe('kitchen to shopping list', () => {
 describe('loading screen', () => {
   it('explains a slow first load, but only once it is actually slow', () => {
     jest.useFakeTimers();
-    axios.get.mockReturnValue(new Promise(() => {})); // the server is still waking up
-    visit('/');
-    expect(screen.queryByText(/free server and database/i)).toBeNull();
-    act(() => { jest.advanceTimersByTime(SLOW_LOAD_NOTE_DELAY_MS); });
-    expect(screen.getByRole('status')).toHaveTextContent(/free server and database, so it's starting up/i);
-    jest.useRealTimers();
+    axios.get.mockImplementation(() => new Promise(() => {})); // the server is still waking up
+    const view = visit('/');
+    try {
+      expect(screen.queryByText(/free server and database/i)).toBeNull();
+      act(() => { jest.advanceTimersByTime(SLOW_LOAD_NOTE_DELAY_MS); });
+      expect(screen.getByRole('status')).toHaveTextContent(/free server and database, so it's starting up/i);
+    } finally {
+      // tear down while the fake clock is still in place, and let React's scheduler finish
+      // anything it queued on it, or later tests' effects never run
+      view.unmount();
+      act(() => { jest.runOnlyPendingTimers(); });
+      jest.useRealTimers();
+    }
+  });
+});
+
+describe('Celiac Mode', () => {
+  const bread = { id: 9, name: 'Sourdough bread', quantity: 1, date_start: addDays(0), date_expire: addDays(3), fridge_bool: false, gluten_status: 'contains', gluten_reason: 'Bread has wheat.' };
+  const cereal = { id: 10, name: 'Cereal', quantity: 1, date_start: addDays(0), date_expire: addDays(90), fridge_bool: false, gluten_status: null, gluten_reason: null };
+
+  it('labels the kitchen, checks unlabeled items once, and counts gluten on the dashboard', async () => {
+    axios.post.mockResolvedValue({ data: [{ id: 10, gluten_status: 'may_contain', gluten_reason: 'Many cereals use malt.' }] });
+    mockServer({ user: 'Alice Smith', ingredients: [bread, cereal, milk], celiac: true });
+    visit('/kitchen');
+    expect(await screen.findByText('🌾 Contains gluten')).toBeInTheDocument();
+    expect(await screen.findByText('🌾 May contain gluten')).toBeInTheDocument();
+    expect(axios.post).toHaveBeenCalledWith('/api/gluten/classify-kitchen', { local_date: expect.any(String) });
+    expect(axios.post.mock.calls.filter(([url]) => url === '/api/gluten/classify-kitchen')).toHaveLength(1);
+  });
+
+  it('shows nothing about gluten when Celiac Mode is off', async () => {
+    mockServer({ user: 'Alice Smith', ingredients: [bread] });
+    visit('/kitchen');
+    await screen.findByText('Sourdough bread');
+    expect(screen.queryByText(/Contains gluten/)).toBeNull();
+    expect(axios.post).not.toHaveBeenCalledWith('/api/gluten/classify-kitchen', expect.anything());
+  });
+
+  it('adds a gluten tile to the dashboard', async () => {
+    mockServer({ user: 'Alice Smith', ingredients: [bread, milk], celiac: true });
+    visit('/dashboard');
+    const summary = await screen.findByRole('region', { name: 'Kitchen summary' });
+    await waitFor(() => expect(within(summary).getByText('Contain gluten').previousSibling).toHaveTextContent('1'));
   });
 });

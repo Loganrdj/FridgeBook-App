@@ -46,8 +46,11 @@ function AppNav() {
                     ))}
                 </ul>
                 <div className="fb-appnav-user">
-                    <span className="fb-avatar" aria-hidden="true">{firstName.charAt(0).toUpperCase()}</span>
-                    <span className="fb-appnav-name">{firstName}</span>
+                    <Link to="/settings" className="fb-appnav-account" aria-label={`Settings for ${firstName}`}>
+                        <span className="fb-avatar" aria-hidden="true">{firstName.charAt(0).toUpperCase()}</span>
+                        <span className="fb-appnav-name">{firstName}</span>
+                        {user && user.celiac_mode && <span className="fb-celiac-pill" title="Celiac Mode is on">GF</span>}
+                    </Link>
                     <a className="fb-btn-ghost fb-btn-sm" href={LOGOUT_URL}>Log out</a>
                 </div>
             </div>

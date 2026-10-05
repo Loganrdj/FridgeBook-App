@@ -27,6 +27,15 @@ const AppReducer = (state, action) => {
       };
     case 'ADD_INGREDIENTS':
       return { ...state, ingredients: byExpiry([...state.ingredients, ...action.payload]), error: null };
+    case 'MERGE_GLUTEN': {
+      const byId = new Map(action.payload.map((u) => [u.id, u]));
+      return {
+        ...state,
+        ingredients: state.ingredients.map((item) => (byId.has(item.id)
+          ? { ...item, gluten_status: byId.get(item.id).gluten_status, gluten_reason: byId.get(item.id).gluten_reason }
+          : item))
+      };
+    }
     case 'SET_ERROR':
       return { ...state, error: action.payload };
     case 'SET_NOTICE':

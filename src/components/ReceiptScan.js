@@ -4,6 +4,8 @@ import axios from 'axios';
 import { GlobalContext } from '../context/GlobalState';
 import { extractItemLines } from '../utils/receiptText';
 import { todayString } from '../utils/dates';
+import { useAuth } from '../context/AuthContext';
+import GlutenBadge, { isGlutenRisk } from './GlutenBadge';
 
 const MAX_SIDE = 2000;
 
@@ -51,7 +53,8 @@ function ReviewRow({ item, onChange }) {
         aria-label={`Include ${item.name || 'item'}`} />
       <div className="fb-scan-fields">
         <label className="fb-field">
-          <span>Item {!item.confident && <span className="fb-badge fb-badge-soon">Check this</span>}</span>
+          <span>Item {!item.confident && <span className="fb-badge fb-badge-soon">Check this</span>}
+            <GlutenBadge status={item.gluten_status} reason={item.gluten_reason} /></span>
           <input className="fb-input" value={item.name} maxLength={100} onChange={(e) => set({ name: e.target.value })} />
         </label>
         <div className="fb-scan-row">
@@ -79,6 +82,9 @@ function ReviewRow({ item, onChange }) {
 
 function ReceiptScan() {
   const { addIngredients } = useContext(GlobalContext);
+  const { user } = useAuth();
+  const celiac = !!(user && user.celiac_mode);
+  const strict = !!(user && user.celiac_strict);
   const history = useHistory();
   const fileInput = useRef(null);
   const [stage, setStage] = useState('pick'); // pick | reading | sorting | review
@@ -125,7 +131,7 @@ function ReceiptScan() {
       const response = await axios.post('/api/receipts/parse', { lines, local_date: todayString() });
       setSent(response.data.lines);
       setRemaining(response.data.remaining);
-      setItems(response.data.items.map((item, index) => ({ ...item, key: index, include: true })));
+      setItems(response.data.items.map((item, index) => ({ ...item, original_name: item.name, key: index, include: true })));
       setStage('review');
     } catch (err) {
       const data = err.response && err.response.data;
@@ -138,9 +144,15 @@ function ReceiptScan() {
   async function addToKitchen() {
     const chosen = items.filter((item) => item.include && item.name.trim());
     setSaving(true);
-    const added = await addIngredients(chosen.map(({ name, quantity, date_expire, fridge_bool }) => ({
-      name: name.trim(), quantity: Number(quantity) || 1, date_expire, fridge_bool
-    })));
+    const added = await addIngredients(chosen.map((item) => {
+      const name = item.name.trim();
+      // keep the receipt's gluten label unless the name was changed
+      const sameName = name.toLowerCase() === (item.original_name || '').toLowerCase();
+      return {
+        name, quantity: Number(item.quantity) || 1, date_expire: item.date_expire, fridge_bool: item.fridge_bool,
+        ...(sameName && item.gluten_status ? { gluten_status: item.gluten_status, gluten_reason: item.gluten_reason } : {})
+      };
+    }));
     setSaving(false);
     if (added) history.push('/kitchen');
   }
@@ -190,6 +202,19 @@ function ReceiptScan() {
             <p className="fb-empty">No food or drinks on this receipt. <button type="button" className="fb-btn-ghost fb-btn-sm" onClick={startOver}>Try another</button></p>
           ) : (
             <>
+              {celiac && (() => {
+                const risky = items.filter((i) => isGlutenRisk(i.gluten_status, strict));
+                const maybe = strict ? [] : items.filter((i) => i.gluten_status === 'may_contain');
+                if (!risky.length && !maybe.length) return null;
+                return (
+                  <div className="fb-gluten-alert" role="alert">
+                    <strong>🌾 Gluten found on this receipt</strong>
+                    {risky.length > 0 && <p>Contains gluten: {risky.map((i) => i.name).join(', ')}.</p>}
+                    {maybe.length > 0 && <p>May contain gluten: {maybe.map((i) => i.name).join(', ')}.</p>}
+                    <p className="fb-gluten-alert-note">Based on typical products. Check each package's label.</p>
+                  </div>
+                );
+              })()}
               <p className="fb-putaway-hint">Fix anything that looks off. Expiration dates are typical estimates.</p>
               <ul className="fb-items">
                 {items.map((item) => (
