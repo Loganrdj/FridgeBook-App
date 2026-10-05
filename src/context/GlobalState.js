@@ -135,11 +135,14 @@ export const GlobalProvider = ({ children }) => {
   // Puts a recipe on the meal calendar; its ingredients show up under "For planned meals" on Shopping
   const planMeal = useCallback(async (recipe, date) => {
     try {
-      const { title, description, minutes, servings, ingredients, steps } = recipe;
+      const { provider, id, title, description, minutes, servings, image, source_name, source_url, ingredients = [], steps = [] } = recipe;
       const response = await axios.post('/api/meals', {
         date,
         local_date: todayString(),
-        recipe: { title, description, minutes, servings, ingredients: ingredients.map(({ name, amount }) => ({ name, amount })), steps }
+        recipe: {
+          provider, id, title, description, minutes, servings, image, source_name, source_url,
+          ingredients: ingredients.map(({ name, amount }) => ({ name, amount })), steps
+        }
       });
       const needs = response.data.needs;
       dispatch({

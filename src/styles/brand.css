@@ -436,12 +436,21 @@ html { scroll-padding-top: 120px; }
 .fb-recipe-steps summary { cursor: pointer; font-weight: 700; color: var(--fb-mint-dark); }
 .fb-recipe-steps ol { margin: 10px 0 0; padding-left: 22px; line-height: 1.5; list-style: decimal; }
 .fb-recipe-steps li + li { margin-top: 8px; }
+.fb-dish-form { margin-bottom: 14px; }
+.fb-dish-form .fb-input, .fb-recipe-search .fb-autosuggest { max-width: 520px; }
+.fb-field-label { font-weight: 700; font-size: 0.9rem; }
+.fb-optional { font-weight: 400; color: var(--fb-ink-soft); }
+.fb-recipe-ingredients li { align-items: center; }
+.fb-recipe-ing { flex: 1; }
+.fb-icon-btn-sm { width: 30px; height: 30px; font-size: 0.85rem; flex: none; }
+.fb-recipe-added { font-size: 0.78rem; font-weight: 700; color: #1E6E5E; background: var(--fb-mint-tint); padding: 3px 8px; border-radius: 999px; flex: none; }
 .fb-recipe-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .fb-plan-form { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
 .fb-plan-form .fb-field { flex: 1; min-width: 150px; }
 .fb-history-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .fb-history-batch { margin-bottom: 28px; }
-.fb-history-title { font-size: 1.1rem; margin-bottom: 12px !important; text-transform: capitalize; }
+.fb-history-title { font-size: 1.1rem; margin-bottom: 12px !important; }
+.fb-history-title::first-letter { text-transform: uppercase; }
 .fb-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---------- Receipt scan ---------- */
@@ -522,4 +531,62 @@ html { scroll-padding-top: 120px; }
   .fb-scan-fields { grid-template-columns: minmax(0, 1fr) 90px 170px auto; align-items: end; }
   .fb-scan-row { display: contents; }
   .fb-scan-fields .fb-segmented { margin-bottom: 2px; }
+}
+
+/* ---------- Recipe pop-up ---------- */
+.fb-recipe-card.is-clickable { cursor: pointer; transition: box-shadow 0.15s ease, transform 0.15s ease; }
+.fb-recipe-card.is-clickable:hover { box-shadow: 0 12px 26px rgba(18, 51, 46, 0.12); transform: translateY(-2px); }
+.fb-recipe-open {
+  padding: 0; border: none; background: none; text-align: left; cursor: pointer;
+  font: inherit; color: inherit;
+}
+.fb-recipe-open:hover { color: var(--fb-mint-dark); }
+.fb-recipe-open:focus-visible, .fb-recipe-view:focus-visible, .fb-modal-close:focus-visible { outline: 3px solid var(--fb-coral); outline-offset: 2px; border-radius: 6px; }
+.fb-recipe-view { justify-self: start; padding: 0; border: none; background: none; cursor: pointer; font-family: var(--fb-font-body); font-size: 0.95rem; }
+.fb-modal-backdrop {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 6vh 16px; overflow-y: auto;
+  background: rgba(18, 51, 46, 0.45);
+  animation: fb-fade 0.15s ease-out;
+}
+.fb-modal {
+  position: relative; width: 100%; max-width: 640px;
+  padding: 30px 28px 26px; border-radius: 22px;
+  background: #FFFFFF; color: var(--fb-ink); font-family: var(--fb-font-body);
+  box-shadow: 0 24px 60px rgba(18, 51, 46, 0.3);
+  animation: fb-pop 0.18s ease-out;
+}
+.fb-modal-close {
+  position: absolute; top: 14px; right: 14px; width: 36px; height: 36px;
+  border: 1.5px solid #E5DCCB; border-radius: 50%; background: #FFFFFF;
+  font-size: 1.3rem; line-height: 1; color: var(--fb-ink); cursor: pointer;
+}
+.fb-modal-close:hover { background: #F6F1E6; }
+.fb-recipe-modal { display: grid; gap: 12px; }
+.fb-recipe-modal h2 { margin: 0 40px 0 0; font-family: var(--fb-font-display); font-weight: 600; font-size: 1.6rem; }
+.fb-recipe-modal h3 { margin: 8px 0 0; font-family: var(--fb-font-display); font-weight: 600; font-size: 1.1rem; }
+.fb-recipe-modal p { margin: 0; }
+.fb-recipe-step-list { margin: 0; padding-left: 22px; list-style: decimal; line-height: 1.55; }
+.fb-recipe-step-list li + li { margin-top: 10px; }
+@keyframes fb-fade { from { opacity: 0; } }
+@keyframes fb-pop { from { opacity: 0; transform: translateY(10px) scale(0.98); } }
+@media (max-width: 520px) {
+  .fb-modal-backdrop { padding: 0; }
+  .fb-modal { min-height: 100%; border-radius: 0; padding: 24px 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fb-modal-backdrop, .fb-modal { animation: none; }
+  .fb-recipe-card.is-clickable:hover { transform: none; }
+}
+
+/* ---------- Recipe sources ---------- */
+.fb-recipe-img { display: block; width: calc(100% + 44px); margin: -22px -22px 4px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 20px 20px 0 0; background: #F3ECDF; }
+.fb-recipe-modal-img { width: 100%; max-height: 260px; object-fit: cover; border-radius: 14px; }
+.fb-recipe-source { justify-self: start; font-size: 0.88rem; font-weight: 700; color: var(--fb-mint-dark) !important; }
+.fb-recipe-ai { justify-self: start; padding: 3px 10px; border-radius: 999px; background: #F3ECDF; color: var(--fb-ink-soft); font-size: 0.8rem; font-weight: 700; }
+.fb-recipe-error { color: #A8371B; font-size: 0.9rem; }
+.fb-recipe-full { justify-self: start; }
+@media (max-width: 720px) {
+  .fb-recipe-img { width: calc(100% + 32px); margin: -18px -16px 4px; }
 }

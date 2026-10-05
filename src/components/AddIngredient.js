@@ -5,14 +5,28 @@ import Autosuggest from 'react-autosuggest';
 import match from 'autosuggest-highlight/match';
 import parse from 'autosuggest-highlight/parse';
 
-const AddIngredient = () => {
-  const [value, setValue] = useState('');
+// Ingredient picker for recipe search. Suggestions come from a list of common
+// ingredients, but anything typed is accepted too (press Enter). The parent can
+// read what's typed but not yet added (value / onValueChange).
+const AddIngredient = ({ value: controlled, onValueChange }) => {
+  const [own, setOwn] = useState('');
+  const value = controlled !== undefined ? controlled : own;
+  const setValue = onValueChange || setOwn;
   const [suggestions, setSuggestion] = useState([]);
-  const { addSearchIngredient: addIngredient } = useContext(GlobalContext);
+  const { addSearchIngredient: addIngredient, searchIngredients = [] } = useContext(GlobalContext);
 
   const onChange = (e, { newValue }) => {
     e.preventDefault();
     setValue(newValue);
+  };
+
+  // Adds a term unless it's empty or already chosen
+  const addTerm = (text) => {
+    const term = String(text || '').trim().toLowerCase().slice(0, 50);
+    if (term && !searchIngredients.some((item) => item.value.toLowerCase() === term)) {
+      addIngredient({ id: Math.floor(Math.random() * 100000000), value: term });
+    }
+    setValue('');
   };
 
   const onSuggestionsFetchRequested = ({ value }) => {
@@ -44,12 +58,8 @@ const AddIngredient = () => {
   };
 
   const onSuggestionSelected = (e, { suggestionValue }) => {
-    const newIngredient = {
-      id: Math.floor(Math.random() * 100000000),
-      value: suggestionValue
-    };
-    addIngredient(newIngredient);
-    setValue('');
+    e.preventDefault();
+    addTerm(suggestionValue);
   };
 
   const getSuggestionValue = suggestion => suggestion.name;
@@ -75,14 +85,14 @@ const AddIngredient = () => {
   };
 
   const inputProps = {
-    placeholder: 'Add an ingredient, e.g. apples',
+    placeholder: 'Add an ingredient and press Enter, e.g. apples',
     'aria-label': 'Add an ingredient',
     value,
     onChange
   };
 
   return (
-    <form className="fb-autosuggest" onSubmit={(e) => e.preventDefault()}>
+    <form className="fb-autosuggest" onSubmit={(e) => { e.preventDefault(); addTerm(value); }}>
       <Autosuggest
         suggestions={suggestions.slice(0, 6)}
         onSuggestionsFetchRequested={onSuggestionsFetchRequested}

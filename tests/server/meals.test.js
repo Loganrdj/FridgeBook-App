@@ -148,3 +148,45 @@ describe("what planned meals need", () => {
     assert.deepEqual((await needs(cookie)).map((n) => n.meal_title), ["Sooner", "Later"]);
   });
 });
+
+describe("meals from Spoonacular and the web", () => {
+  test("a Spoonacular meal stores only its id, title, image and link, and fetches ingredients for needs", async () => {
+    const spoon = require("../../lib/providers/spoonacular");
+    const realGet = spoon.getRecipe;
+    let asked;
+    spoon.getRecipe = async (id) => { asked = id; return { ingredients: [{ name: "eggplant", amount: "1" }, { name: "salt", amount: "1 tsp" }] }; };
+    try {
+      const { cookie } = await t.login("Alice");
+      const res = await plan(cookie, day(2), {
+        provider: "spoonacular", id: "715415", title: "Classic Ratatouille", image: "https://img/1.jpg",
+        source_name: "Serious Eats", source_url: "https://www.seriouseats.com/ratatouille",
+        ingredients: [{ name: "eggplant", amount: "1" }], steps: ["Bake."]
+      });
+      assert.equal(res.status, 201);
+      assert.deepEqual(res.body.recipe, {
+        provider: "spoonacular", external_id: "715415", description: "", minutes: null, servings: null,
+        image: "https://img/1.jpg", source_name: "Serious Eats", source_url: "https://www.seriouseats.com/ratatouille"
+      });
+      assert.equal(res.body.needs, 1);
+      assert.equal(asked, "715415");
+      assert.deepEqual((await needs(cookie)).map((n) => n.name), ["eggplant"]);
+    } finally {
+      spoon.getRecipe = realGet;
+    }
+  });
+
+  test("a web recipe keeps its link and may skip steps", async () => {
+    const { cookie } = await t.login("Alice");
+    const res = await plan(cookie, day(1), recipe({ provider: "web", steps: [], source_name: "BBC Good Food", source_url: "https://www.bbcgoodfood.com/r" }));
+    assert.equal(res.status, 201);
+    assert.equal(res.body.recipe.source_url, "https://www.bbcgoodfood.com/r");
+    assert.equal(res.body.recipe.provider, "web");
+  });
+
+  test("rejects a Spoonacular meal without a valid id, and unsafe links", async () => {
+    const { cookie } = await t.login("Alice");
+    assert.equal((await plan(cookie, day(1), { provider: "spoonacular", id: "abc", title: "X" })).status, 422);
+    const res = await plan(cookie, day(1), recipe({ source_url: "javascript:alert(1)" }));
+    assert.equal(res.body.recipe.source_url, null);
+  });
+});

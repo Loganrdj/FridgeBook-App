@@ -13,10 +13,19 @@ export function loadHistory(userId, today) {
   }
 }
 
+// Spoonacular's terms only allow keeping a recipe's id, title, image and link,
+// so their recipes are saved as references and their details fetched again
+export function forStorage(recipe) {
+  if (recipe.provider !== 'spoonacular') return recipe;
+  const { provider, id, title, image, source_name, source_url } = recipe;
+  return { provider, id, title, image, source_name, source_url };
+}
+
 export function saveHistory(userId, batches) {
   if (!userId) return;
   try {
-    localStorage.setItem(keyFor(userId), JSON.stringify(batches.slice(0, MAX_BATCHES)));
+    const stored = batches.slice(0, MAX_BATCHES).map((batch) => ({ ...batch, recipes: batch.recipes.map(forStorage) }));
+    localStorage.setItem(keyFor(userId), JSON.stringify(stored));
   } catch (e) {
     // storage full or blocked: history just won't survive a reload
   }

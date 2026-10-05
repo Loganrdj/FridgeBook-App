@@ -28,3 +28,13 @@ it('survives corrupted storage', () => {
   localStorage.setItem('recipeHistory:7', '{not json');
   expect(loadHistory(7, '2026-10-02')).toEqual([]);
 });
+
+it('saves Spoonacular recipes as references only', () => {
+  const full = { provider: 'spoonacular', id: '7', title: 'Ratatouille', image: 'https://img/7.jpg', source_name: 'Site', source_url: 'https://site/r',
+    ingredients: [{ name: 'eggplant', amount: '1', have: false }], steps: ['Bake.'], minutes: 45 };
+  const web = { provider: 'web', id: 'w1', title: 'Web one', ingredients: [{ name: 'x', amount: '1' }], steps: ['y'] };
+  saveHistory(3, [{ id: 1, day: '2026-10-05', at: '', terms: [], recipes: [full, web] }]);
+  const [batch] = loadHistory(3, '2026-10-05');
+  expect(batch.recipes[0]).toEqual({ provider: 'spoonacular', id: '7', title: 'Ratatouille', image: 'https://img/7.jpg', source_name: 'Site', source_url: 'https://site/r' });
+  expect(batch.recipes[1]).toEqual(web);
+});

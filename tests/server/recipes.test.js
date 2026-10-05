@@ -207,3 +207,52 @@ describe("daily limit follows the user's own date", () => {
     assert.deepEqual((await t.request("GET", `/api/recipes/usage?local_date=${day(30)}`, { cookie })).body, { limit: 20, remaining: 20 });
   });
 });
+
+describe("searching for a dish by name", () => {
+  test("asks for takes on the dish and still checks the kitchen", async () => {
+    reply = async () => ({ data: { recipes: [sampleRecipe({ title: "Classic ratatouille", ingredients: [
+      { name: "eggplant", amount: "1" }, { name: "zucchini", amount: "2" }, { name: "canned tomatoes", amount: "1 can" }, { name: "olive oil", amount: "3 tbsp" }
+    ] })] } });
+    const { cookie } = await userWithKitchen("Alice", [["Canned tomatoes", 300, false]]);
+    const res = await suggest(cookie, { dish: "  Ratatouille ", ingredients: [] });
+    assert.equal(res.status, 200);
+    assert.match(calls[0].prompt, /wants to make: Ratatouille\. Suggest 3 different takes/);
+    assert.doesNotMatch(calls[0].prompt, /use up what's expiring/);
+    const have = Object.fromEntries(res.body.recipes[0].ingredients.map((i) => [i.name, i.have]));
+    assert.deepEqual(have, { eggplant: false, zucchini: false, "canned tomatoes": true, "olive oil": false });
+  });
+
+  test("a dish works even with an empty kitchen, and mixes in chosen ingredients", async () => {
+    const { cookie } = await t.login("Alice");
+    assert.equal((await suggest(cookie, { dish: "pad thai", ingredients: ["shrimp"] })).status, 200);
+    assert.match(calls[0].prompt, /wants to make: pad thai\..*If it fits, work in: shrimp\./s);
+  });
+
+  test("different dishes aren't served from each other's cache", async () => {
+    const { cookie } = await userWithKitchen("Alice", [["Rice", 100, false]]);
+    await suggest(cookie, { dish: "risotto" });
+    await suggest(cookie, { dish: "paella" });
+    assert.equal(calls.length, 2);
+  });
+
+  test("rejects a non-text dish", async () => {
+    const { cookie } = await t.login("Alice");
+    assert.equal((await suggest(cookie, { dish: { name: "x" } })).status, 422);
+  });
+});
+
+test("recipe text comes back as plain text, without HTML entities or tags", async () => {
+  reply = async () => ({ data: { recipes: [sampleRecipe({
+    title: "Proven&ccedil;al <b>ratatouille</b>",
+    description: "Saut&eacute; then simmer &amp; serve.",
+    ingredients: [{ name: "cr&egrave;me fra&icirc;che", amount: "&frac12; cup" }],
+    steps: ["Saut&eacute; the <i>onions</i>.", "Serve."]
+  })] } });
+  const { cookie } = await userWithKitchen("Alice", [["Rice", 100, false]]);
+  const res = await suggest(cookie, { dish: "ratatouille" });
+  const [r] = res.body.recipes;
+  assert.equal(r.title, "Provençal ratatouille");
+  assert.equal(r.description, "Sauté then simmer & serve.");
+  assert.deepEqual(r.ingredients.map((i) => [i.name, i.amount]), [["crème fraîche", "½ cup"]]);
+  assert.equal(r.steps[0], "Sauté the onions.");
+});

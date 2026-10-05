@@ -32,6 +32,8 @@ function Recipes() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [remaining, setRemaining] = useState(null);
+  const [dish, setDish] = useState('');
+  const [pending, setPending] = useState(''); // typed in the ingredient box but not added yet
   const resetsIn = useMidnightCountdown();
 
   const chosen = searchIngredients.map((item) => item.value);
@@ -54,12 +56,21 @@ function Recipes() {
       .forEach((item) => addSearchIngredient({ id: `kitchen-${item.id}`, value: item.name.toLowerCase() }));
   }
 
-  async function findRecipes() {
+  async function findRecipes(event) {
+    if (event) event.preventDefault();
+    // anything still typed in the ingredient box counts too
+    const typed = pending.trim().toLowerCase();
+    const terms = typed && !chosen.includes(typed) ? [...chosen, typed] : chosen;
+    if (typed) {
+      if (!chosen.includes(typed)) addSearchIngredient({ id: `typed-${Date.now()}`, value: typed });
+      setPending('');
+    }
+    const wanted = dish.trim();
     setLoading(true);
     setError('');
     try {
-      const response = await axios.post('/api/recipes/suggest', { ingredients: chosen, local_date: todayString() });
-      const batch = { id: `${Date.now()}`, day: todayString(), at: new Date().toISOString(), terms: chosen, recipes: response.data.recipes };
+      const response = await axios.post('/api/recipes/suggest', { dish: wanted, ingredients: terms, local_date: todayString() });
+      const batch = { id: `${Date.now()}`, day: todayString(), at: new Date().toISOString(), dish: wanted, terms, recipes: response.data.recipes };
       const next = addBatch(loadHistory(userId, todayString()), batch);
       saveHistory(userId, next);
       setHistory(next);
@@ -92,8 +103,16 @@ function Recipes() {
             Use what's expiring
           </button>
         </div>
-        <div className="fb-recipe-search">
-          <AddIngredient />
+        <form className="fb-form fb-dish-form" onSubmit={findRecipes}>
+          <label className="fb-field">
+            <span>What do you want to make? <span className="fb-optional">(optional)</span></span>
+            <input className="fb-input" value={dish} onChange={(e) => setDish(e.target.value)} maxLength={80}
+              placeholder="e.g. ratatouille, pad thai, banana bread" autoComplete="off" />
+          </label>
+        </form>
+        <div className="fb-field fb-recipe-search">
+          <span className="fb-field-label">Ingredients to use <span className="fb-optional">(optional)</span></span>
+          <AddIngredient value={pending} onValueChange={setPending} />
         </div>
         {chosen.length > 0 && (
           <ul className="fb-chips fb-chosen" aria-label="Chosen ingredients">
@@ -109,7 +128,7 @@ function Recipes() {
         )}
         <div className="fb-recipe-actions">
           <button type="button" className="fb-btn" onClick={findRecipes} disabled={loading || remaining === 0}>
-            {loading ? 'Thinking up recipes…' : chosen.length ? 'Find recipes' : 'Find recipes from my kitchen'}
+            {loading ? 'Thinking up recipes…' : dish.trim() || chosen.length || pending.trim() ? 'Find recipes' : 'Find recipes from my kitchen'}
           </button>
           {remaining !== null && (
             <span className="fb-count">
@@ -132,15 +151,20 @@ function Recipes() {
         <section aria-label="Recipe ideas">
           <div className="fb-history-header">
             <p className="fb-note-text">
-              AI-generated with Gemini. Double-check cooking times and temperatures, especially for meat and fish.
-              Today's ideas stay on this device until midnight.
+              Recipes come from published sources where possible; any written by AI are labeled.
+              Double-check cooking times and temperatures. Today's ideas stay on this device until midnight.
+              {history.some((batch) => batch.recipes.some((r) => r.provider === 'spoonacular')) && (
+                <> Recipe search <a className="fb-link" href="https://spoonacular.com/food-api" target="_blank" rel="noopener noreferrer">powered by spoonacular</a>.</>
+              )}
             </p>
             <button type="button" className="fb-btn-ghost fb-btn-sm" onClick={clearHistory}>Clear ideas</button>
           </div>
           {history.map((batch) => (
             <section key={batch.id} className="fb-history-batch" aria-label={`Search at ${timeLabel(batch.at)}`}>
               <h2 className="fb-history-title">
-                {batch.terms.length ? `With ${batch.terms.join(', ')}` : 'From your kitchen'}
+                {batch.dish
+                  ? `${batch.dish}${batch.terms.length ? ` with ${batch.terms.join(', ')}` : ''}`
+                  : batch.terms.length ? `With ${batch.terms.join(', ')}` : 'From your kitchen'}
                 <span className="fb-count"> · {timeLabel(batch.at)}</span>
               </h2>
               <div className="fb-recipe-grid">

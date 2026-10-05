@@ -32,10 +32,19 @@ function EventCalendar() {
 
   useEffect(() => { load(); }, [load]);
 
-  const showMeal = ({ event }) => {
+  const showMeal = async ({ event }) => {
     const meal = meals.find((m) => String(m.id) === event.id);
     if (!meal) return;
-    const { recipe } = meal;
+    let recipe = meal.recipe;
+    if (recipe.provider === "spoonacular") {
+      // saved as a reference only (their terms), so fetch the details now
+      try {
+        const response = await axios.get(`/api/recipes/details/spoonacular/${recipe.external_id}?local_date=${todayString()}`);
+        recipe = { ...recipe, ...response.data };
+      } catch (err) {
+        recipe = { ...recipe, ingredients: [], steps: [] };
+      }
+    }
     const needFor = (name) => needs.find((n) => n.meal_id === meal.id && n.name.toLowerCase() === name.toLowerCase());
     const status = (name) => {
       const need = needFor(name);
@@ -46,9 +55,10 @@ function EventCalendar() {
       <div class="fb-meal-popup">
         <p>${escapeHtml(formatDayLabel(meal.date))}${recipe.minutes ? ` · ${recipe.minutes} min` : ""}${recipe.servings ? ` · serves ${recipe.servings}` : ""}</p>
         <h4>Ingredients</h4>
-        <ul>${recipe.ingredients.map((i) => `<li>${i.amount ? `<strong>${escapeHtml(i.amount)}</strong> ` : ""}${escapeHtml(i.name)}${status(i.name)}</li>`).join("")}</ul>
+        <ul>${(recipe.ingredients || []).map((i) => `<li>${i.amount ? `<strong>${escapeHtml(i.amount)}</strong> ` : ""}${escapeHtml(i.name)}${status(i.name)}</li>`).join("")}</ul>
         <h4>Steps</h4>
-        <ol>${recipe.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ol>
+        ${recipe.steps && recipe.steps.length ? `<ol>${recipe.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ol>` : "<p>The steps are on the original recipe.</p>"}
+        ${recipe.source_url ? `<p><a href="${escapeHtml(recipe.source_url)}" target="_blank" rel="noopener noreferrer">View the full recipe${recipe.source_name ? ` on ${escapeHtml(recipe.source_name)}` : ""} ↗</a></p>` : ""}
       </div>`;
     Alert.fire({
       title: escapeHtml(meal.title),

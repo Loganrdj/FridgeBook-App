@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const db = require("../models");
 const { matches, isStaple } = require("../lib/ingredientMatch");
+const spoonacular = require("../lib/providers/spoonacular");
 const { requireAuth, isValidDate, localDate, daysBetween, parseId, handleError } = require("./validation");
 
 const PAST_DAYS = 31;
@@ -15,25 +16,62 @@ function text(value, max) {
     return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
-// A recipe sent by the browser (it came from a search): keep only known fields, sanely sized
+function link(value) {
+    try {
+        const url = new URL(String(value || ""));
+        return url.protocol === "https:" || url.protocol === "http:" ? url.href.slice(0, 500) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+// A recipe sent by the browser (it came from a search): keep only known fields, sanely sized.
+// Spoonacular recipes keep just their id, title, image and link (their terms
+// don't allow storing ingredients or steps); the rest is fetched when needed.
 function parseRecipe(raw) {
     const errors = [];
     raw = raw && typeof raw === "object" ? raw : {};
     const title = text(raw.title, 100);
     if (!title) errors.push("recipe needs a title");
+    const whole = (value, max) => (Number.isInteger(value) && value > 0 ? Math.min(value, max) : null);
+    const common = {
+        description: text(raw.description, 300),
+        minutes: whole(raw.minutes, 1440),
+        servings: whole(raw.servings, 50),
+        image: link(raw.image),
+        source_name: text(raw.source_name, 80) || null,
+        source_url: link(raw.source_url)
+    };
+
+    if (raw.provider === "spoonacular") {
+        const id = String(raw.id || "");
+        if (!/^\d{1,12}$/.test(id)) errors.push("recipe needs a Spoonacular id");
+        return { errors, title, recipe: { provider: "spoonacular", external_id: id, ...common } };
+    }
+
     const ingredients = (Array.isArray(raw.ingredients) ? raw.ingredients : [])
-        .slice(0, 25)
+        .slice(0, 30)
         .map((item) => ({ name: text(item && item.name, 80), amount: text(item && item.amount, 40) }))
         .filter((item) => item.name);
     if (!ingredients.length) errors.push("recipe needs ingredients");
-    const steps = (Array.isArray(raw.steps) ? raw.steps : []).map((step) => text(step, 500)).filter(Boolean).slice(0, 15);
-    if (!steps.length) errors.push("recipe needs steps");
-    const whole = (value, max) => (Number.isInteger(value) && value > 0 ? Math.min(value, max) : null);
+    const steps = (Array.isArray(raw.steps) ? raw.steps : []).map((step) => text(step, 500)).filter(Boolean).slice(0, 20);
+    if (!steps.length && !common.source_url) errors.push("recipe needs steps");
     return {
         errors,
         title,
-        recipe: { description: text(raw.description, 300), minutes: whole(raw.minutes, 1440), servings: whole(raw.servings, 50), ingredients, steps }
+        recipe: { provider: raw.provider === "web" ? "web" : "ai", ...common, ingredients, steps }
     };
+}
+
+// A planned meal's ingredients (fetched fresh for Spoonacular recipes)
+async function ingredientsOf(meal) {
+    if (meal.recipe.provider !== "spoonacular") return meal.recipe.ingredients || [];
+    try {
+        return (await spoonacular.getRecipe(meal.recipe.external_id)).ingredients || [];
+    } catch (err) {
+        console.error("Spoonacular ingredients failed:", err.message);
+        return [];
+    }
 }
 
 function checkDate(date, today) {
@@ -73,7 +111,7 @@ async function computeNeeds(userId, today, onlyMealId) {
     const needs = [];
     for (const meal of meals) {
         const dismissed = (meal.dismissed || []).map((name) => name.toLowerCase());
-        for (const item of meal.recipe.ingredients || []) {
+        for (const item of await ingredientsOf(meal)) {
             if (isStaple(item.name) || dismissed.includes(item.name.toLowerCase())) continue;
             const inKitchen = foods.filter((food) => matches(food.name, item.name));
             if (inKitchen.some((food) => food.date_expire >= meal.date)) continue;
