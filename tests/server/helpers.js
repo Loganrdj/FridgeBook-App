@@ -88,7 +88,7 @@ async function startApp({ migrate = true } = {}) {
     await database.stop();
   }
 
-  return { db, umzug, login, request, stop };
+  return { db, umzug, login, request, stop, base, app };
 }
 
 module.exports = { startApp, startDatabase };

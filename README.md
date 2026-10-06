@@ -19,6 +19,7 @@ Created by Logan Moss, Gaofeng Su, Ian Hooper, Omar Abbasi.
 - PassportJS
 - Sequelize
 - PostgreSQL (Supabase in production)
+- iPhone app: Expo / React Native in `mobile/` (see `mobile/README.md`)
 - Umzug migrations
 
 ## Deployment

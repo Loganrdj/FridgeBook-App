@@ -204,11 +204,20 @@ function imageType(buf) {
   return null;
 }
 
-// Length of a WAV clip in seconds, or null if it isn't a WAV file
+// Length of a WAV clip in seconds, or null if it isn't a WAV file. Walks the
+// chunks, since iPhones add extra ones (like FLLR padding) before the audio.
 function wavSeconds(buf) {
   if (buf.length < 44 || buf.toString("ascii", 0, 4) !== "RIFF" || buf.toString("ascii", 8, 12) !== "WAVE") return null;
-  const byteRate = buf.readUInt32LE(28);
-  return byteRate ? (buf.length - 44) / byteRate : null;
+  let byteRate = null;
+  let dataBytes = null;
+  for (let offset = 12; offset + 8 <= buf.length;) {
+    const id = buf.toString("ascii", offset, offset + 4);
+    const size = buf.readUInt32LE(offset + 4);
+    if (id === "fmt " && offset + 20 <= buf.length) byteRate = buf.readUInt32LE(offset + 16);
+    if (id === "data") { dataBytes = Math.min(size, buf.length - offset - 8); break; }
+    offset += 8 + size + (size % 2);
+  }
+  return byteRate && dataBytes !== null ? dataBytes / byteRate : null;
 }
 
 const MENU_PHOTO_SYSTEM = [

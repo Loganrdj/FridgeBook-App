@@ -30,7 +30,8 @@ FridgeBook (https://fridge-book.com) is a kitchen inventory app. It tracks fridg
   - always: `DATABASE_URL` (the Supabase **Session pooler** string with the password URL-encoded), `SESSION_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL=https://fridge-book.com/auth/google/redirect`, `CLIENT_URL=https://fridge-book.com/`;
   - Gemini: `GEMINI_RECIPES_API_KEY`, `GEMINI_RECEIPTS_API_KEY` (separate AI Studio projects, so each gets its own free quota), optional `GEMINI_GLUTEN_API_KEY` (falls back to the receipts key);
   - not set yet: `SPOONACULAR_API_KEY`, `OPENAI_API_KEY`;
-  - optional caps: `WEB_SEARCH_DAILY_LIMIT` (5), `WEB_SEARCH_MONTHLY_LIMIT` (300).
+  - optional caps: `WEB_SEARCH_DAILY_LIMIT` (5), `WEB_SEARCH_MONTHLY_LIMIT` (300);
+  - `MOBILE_DEV_REDIRECTS=true` only while testing the iPhone app in Expo Go (lets sign-ins return to `exp://` addresses on a private network). Leave it unset otherwise.
 
 ## Local dev and tests
 ```
@@ -71,6 +72,13 @@ GitHub Actions CI runs both test suites and the build on Node 22 / npm 10.
   - **Menu photo** and **Ask the waiter** (phones only, `isPhone()` in `src/utils/media.js`): `POST /api/gluten/menu-photo` (raw image body, Gemini vision, photo not stored) and `POST /api/gluten/voice` (raw 16 kHz mono WAV made in the browser, 60 s max, Gemini audio, never stored). The voice check can't clear a dish that's usually made with gluten; it drops to "ask".
   - Daily limits (AiUsages kinds): `restaurant` 3, `menu` 10, `voice` 20. A new restaurant check uses up to 2 web searches.
 
+- **iPhone app** (`mobile/`, started 2026-10-06; see `mobile/README.md`):
+  - Expo SDK 57, Expo Router (`mobile/src/app/`), plain JavaScript like the rest of the repo. Install packages at the versions in `expo/bundledNativeModules.json` (`npx expo install` can't reach Expo's servers from some environments).
+  - Screens: sign-in, Kitchen, Gluten check (restaurant, menu photo, waiter recording as 16 kHz WAV, iPhone only), Settings. The Gluten check tab shows only in Celiac Mode.
+  - **Sign-in** (`lib/mobileAuth.js`, `routes/authRoutes.js`): `GET /auth/mobile/start?redirect_uri&code_challenge` → the normal Google sign-in (no website session is created) → `fridgebook://auth?code=…` (one-time, 2 minutes, in memory) → `POST /auth/mobile/token { code, code_verifier }` → a `fbm_…` token (only its hash is stored in `MobileTokens`, 180 days). `app.js` runs the `bearer` middleware, so every route sees `req.user` as with a cookie; a bad or expired token is a 401, never "logged out". `DELETE /auth/mobile/token` signs the app out.
+  - Redirects are allowed only to `fridgebook://`, plus `exp://` on private networks when `MOBILE_DEV_REDIRECTS=true`.
+  - Tests: `cd mobile && npm test`; CI also runs `expo export --platform ios`.
+
 ## Product decisions (from Logan)
 - **$0 hosting** where possible. The suggested upgrade, if reliability ever matters more than cost, is Render Basic Postgres at about $6/month.
 - **Receipt photos never go to an external API.** Only the filtered item text lines are sent.
@@ -84,11 +92,12 @@ GitHub Actions CI runs both test suites and the build on Node 22 / npm 10.
    - `POST /api/gluten/product-photo` via Gemini vision (`lib/gemini.js` already takes `media`);
    - a dining card with a checklist to show staff;
    - gluten-free recipe search (`intolerances=gluten`) and flagging gluten ingredients in recipes.
-3. **iPhone app:** Expo / React Native in `mobile/`, sharing the backend:
-   - Google and Apple sign-in through Bearer-token middleware (Sign in with Apple is required by guideline 4.8);
-   - a live barcode scanner and on-device ML Kit receipt OCR;
+3. **iPhone app:** started in `mobile/` (Google sign-in with tokens, Kitchen, Gluten check, Settings). Still to do:
+   - Sign in with Apple (required by guideline 4.8 because Google sign-in is offered), which needs the Apple Developer Program ($99/year);
+   - Shopping list, Recipes, Calendar and receipt scanning screens;
+   - a live barcode scanner and on-device receipt OCR;
    - `DELETE /api/me` for in-app account deletion, and a privacy policy;
-   - the Apple Developer Program costs $99/year.
+   - EAS builds and TestFlight; pick the final bundle ID (`com.fridgebook.app` is a placeholder).
 4. Pinned for later: the opt-in Google Calendar sync / .ics feed, and "Send to Instacart".
 
 ## Open follow-ups

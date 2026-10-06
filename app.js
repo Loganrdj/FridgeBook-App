@@ -39,6 +39,8 @@ app.use(session({
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+// The iPhone app signs in with a token instead of a cookie
+app.use(require("./lib/mobileAuth").bearer);
 
 app.use(router);
 

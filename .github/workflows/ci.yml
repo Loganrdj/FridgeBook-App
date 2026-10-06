@@ -31,3 +31,25 @@ jobs:
         run: npm run build
         env:
           CI: false # CRA would fail on old lint warnings
+
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - run: npm ci
+
+      - name: App tests
+        run: npx jest --ci
+
+      - name: iPhone bundle builds
+        run: npx expo export --platform ios --output-dir /tmp/ios-bundle
