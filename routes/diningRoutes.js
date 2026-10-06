@@ -7,7 +7,7 @@ const gemini = require("../lib/gemini");
 const webBudget = require("../lib/webBudget");
 const jobs = require("../lib/jobs");
 const { parseUrl } = require("../lib/safeFetch");
-const { classifyName } = require("../lib/gluten");
+const { resolveWithAnswers } = require("../lib/gluten");
 const { words } = require("../lib/ingredientMatch");
 const { analyzeDishes, scoreMenu, dishKey, MODELS, apiKey } = require("../lib/dishCheck");
 const restaurants = require("../lib/restaurantCheck");
@@ -364,17 +364,13 @@ router.post("/voice", express.raw({ type: ["audio/wav", "audio/x-wav", "audio/wa
       return res.status(503).json({ error: "We couldn't listen to that right now. Please try again in a minute." });
     }
 
-    const statuses = ["contains", "may_contain", "gluten_free", "unknown"];
-    const ingredients = (Array.isArray(data && data.ingredients) ? data.ingredients : [])
-      .map((item) => {
-        const name = cleanInput(item && item.name, 80);
-        // the rules win wherever they're sure
-        const rule = classifyName(name);
-        const status = rule ? rule.status : statuses.includes(item.gluten) ? item.gluten : "unknown";
-        return { name, gluten_status: status, gluten_reason: rule ? rule.reason : cleanInput(item.reason, 200) || null };
-      })
+    const heard = (Array.isArray(data && data.ingredients) ? data.ingredients : [])
+      .map((item) => ({ name: cleanInput(item && item.name, 80), aiStatus: item && item.gluten, aiReason: cleanInput(item && item.reason, 200) }))
       .filter((item) => item.name)
       .slice(0, 40);
+    // the rules win wherever they're sure, then the shared dictionary, then the model
+    const labels = await resolveWithAnswers(heard);
+    const ingredients = heard.map((item, i) => ({ name: item.name, gluten_status: labels[i].status, gluten_reason: labels[i].reason }));
     const preparation = (Array.isArray(data && data.preparation) ? data.preparation : [])
       .map((p) => ({ text: cleanInput(p && p.text, 200), risk: ["gluten", "cross_contact", "ok"].includes(p && p.risk) ? p.risk : "cross_contact" }))
       .filter((p) => p.text)

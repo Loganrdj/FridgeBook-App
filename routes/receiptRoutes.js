@@ -2,7 +2,7 @@ const router = require("express").Router();
 const db = require("../models");
 const gemini = require("../lib/gemini");
 const { isSafeLine } = require("../lib/receiptGuard");
-const { STATUSES: GLUTEN_STATUSES, classifyName } = require("../lib/gluten");
+const { STATUSES: GLUTEN_STATUSES, resolveWithAnswers } = require("../lib/gluten");
 const { requireAuth, localDate } = require("./validation");
 
 const DAILY_LIMIT = Number(process.env.RECEIPT_DAILY_LIMIT) || 10;
@@ -110,17 +110,19 @@ router.post("/parse", async (req, res) => {
       temperature: 0.2
     });
 
-    const items = (Array.isArray(data && data.items) ? data.items : [])
+    const found = (Array.isArray(data && data.items) ? data.items : [])
       .filter((item) => item && typeof item.name === "string" && item.name.trim())
-      .slice(0, MAX_LINES)
-      .map((item) => {
+      .slice(0, MAX_LINES);
+    // the rules win wherever they're sure, then the shared dictionary, then the
+    // model's own assessment (which joins the dictionary)
+    const glutenLabels = await resolveWithAnswers(found.map((item) => ({
+      name: item.name.trim().slice(0, 100), aiStatus: item.gluten, aiReason: item.gluten_reason
+    })));
+    const items = found
+      .map((item, index) => {
         const storage = ["fridge", "freezer", "pantry"].includes(item.storage) ? item.storage : "fridge";
         const name = item.name.trim().slice(0, 100);
-        // the rules win wherever they're sure; otherwise use the model's assessment
-        const rule = classifyName(name);
-        const gluten = rule || (GLUTEN_STATUSES.includes(item.gluten)
-          ? { status: item.gluten, reason: String(item.gluten_reason || "").slice(0, 200) || null }
-          : { status: "unknown", reason: null });
+        const gluten = glutenLabels[index];
         return {
           name,
           quantity: clampInt(item.quantity, 1, 99, 1),

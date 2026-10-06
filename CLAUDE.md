@@ -58,7 +58,8 @@ GitHub Actions CI runs both test suites and the build on Node 22 / npm 10.
 - **Daily AI limits:** stored in the `AiUsages` table (user, kind, day), using the user's local date. Kinds and limits: `recipes` 20, `receipts` 10, `web`, `gluten` 30.
 - **Celiac Mode** (Part A shipped 2026-10-05, commit 3032881):
   - An account setting (`Users.celiac_mode`, `celiac_strict`; `/api/me/settings`; `src/components/Settings.js`), off by default.
-  - `lib/gluten.js`: rules first, then one batched Gemini call. A failed AI check isn't saved, so it's tried again later.
+  - `lib/gluten.js`: rules first (including hidden-gluten foods like hoisin, gravy, imitation crab, oyster sauce, miso), then the shared **ingredient dictionary**, then one batched Gemini call. A failed AI check isn't saved, so it's tried again later.
+  - **Ingredient dictionary** (`IngredientChecks` table, keyed by `ingredientKey()`: simplified words, at most 5): every real AI answer about an ingredient is saved for everyone and reused for 180 days (`hits` counts reuses). Kitchen checks, receipt scans, waiter recordings and the recipe cross-check all read it; receipts and recordings also add to it (`resolveWithAnswers`). Labels sent by a browser and "unknown" answers never go in. A lookup failure just falls back to the AI. A kitchen check answered entirely from rules and the dictionary doesn't count toward the daily `gluten` limit.
   - `POST /api/gluten/classify-kitchen` labels kitchen items (`Foods.gluten_status`/`gluten_reason`). Risky rows are highlighted, and gluten-free items get no badge (`GlutenBadge.js`).
   - Receipt review shows gluten alerts. Strict mode treats "may contain" as unsafe.
   - The `ProductChecks` table (barcode cache) exists but isn't used yet.
