@@ -64,11 +64,11 @@ async function startApp({ migrate = true } = {}) {
     return { user, cookie: `connect.sid=${encodeURIComponent(`s:${sid}.${signature}`)}` };
   }
 
-  // fetch wrapper: request(method, path, { cookie, body, raw })
-  async function request(method, urlPath, { cookie, body, raw } = {}) {
+  // fetch wrapper: request(method, path, { cookie, body, raw, contentType })
+  async function request(method, urlPath, { cookie, body, raw, contentType } = {}) {
     const headers = {};
     if (cookie) headers.Cookie = cookie;
-    if (body !== undefined || raw !== undefined) headers["Content-Type"] = "application/json";
+    if (body !== undefined || raw !== undefined) headers["Content-Type"] = contentType || "application/json";
     const res = await fetch(base + urlPath, {
       method,
       headers,
