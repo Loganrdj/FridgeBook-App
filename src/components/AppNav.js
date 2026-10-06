@@ -41,7 +41,7 @@ function AppNav() {
             <div className="fb-appnav-inner">
                 <Link className="fb-appnav-brand" to="/dashboard"><Logo /></Link>
                 <ul className="fb-appnav-links">
-                    {LINKS.map((link) => (
+                    {(user && user.celiac_mode ? [...LINKS, { to: '/gluten', label: 'Gluten check' }] : LINKS).map((link) => (
                         <li key={link.to}><NavLink to={link.to}>{link.label}</NavLink></li>
                     ))}
                 </ul>

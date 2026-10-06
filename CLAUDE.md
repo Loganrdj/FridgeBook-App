@@ -62,6 +62,13 @@ GitHub Actions CI runs both test suites and the build on Node 22 / npm 10.
   - `POST /api/gluten/classify-kitchen` labels kitchen items (`Foods.gluten_status`/`gluten_reason`). Risky rows are highlighted, and gluten-free items get no badge (`GlutenBadge.js`).
   - Receipt review shows gluten alerts. Strict mode treats "may contain" as unsafe.
   - The `ProductChecks` table (barcode cache) exists but isn't used yet.
+- **Gluten check page** (`/gluten`, `src/components/GlutenCheck.js`, `routes/diningRoutes.js`; nav link only in Celiac Mode), added 2026-10-05:
+  - **Restaurant check** (all devices): `POST /api/gluten/restaurant` with `{ name, city }` (needs `OPENAI_API_KEY`) or `{ url }` (read by `lib/safeFetch.js`, which blocks private addresses at connect time; HTML, PDF or image menus). It answers `202 { job }` and the page polls `GET /api/gluten/jobs/:id` (`lib/jobs.js`, in memory), because a full check can outlast the Netlify proxy's wait.
+  - **Two-part score** (`scoreMenu` in `lib/dishCheck.js`): the ingredient score is the share of dishes with low ingredient risk. The kitchen's cross-contact level (`lower`/`moderate`/`high`/`very_high`, researched by `lib/restaurantCheck.js`, cited links only) caps the overall score: normal 100/70/40/15, Strict 100/40/15/0. No cited evidence means `high`; `lower` needs a "good" cited finding; a menu that's mostly gluten means `very_high`.
+  - **Per-dish gluten chance** (`analyzeDishes`): the highest of the menu's own words (rules from `lib/gluten.js`), one batched Gemini estimate, and a Spoonacular recipe cross-check (share of published recipes using a gluten ingredient; borderline dishes only, `RECIPE_CROSS_CHECKS` per request). Verdicts: `likely_gluten` at 60+, `ask` at 15+, else `low_risk`; `unknown` (AI failed) is treated as gluten, and fried dishes are never `low_risk`.
+  - **Shared caches:** `DishChecks` (90 days), `RecipeStats` (90 days; counts plus titles/links only, per Spoonacular's terms), `RestaurantChecks` (30 days; cache hits are free and don't use quota).
+  - **Menu photo** and **Ask the waiter** (phones only, `isPhone()` in `src/utils/media.js`): `POST /api/gluten/menu-photo` (raw image body, Gemini vision, photo not stored) and `POST /api/gluten/voice` (raw 16 kHz mono WAV made in the browser, 60 s max, Gemini audio, never stored). The voice check can't clear a dish that's usually made with gluten; it drops to "ask".
+  - Daily limits (AiUsages kinds): `restaurant` 3, `menu` 10, `voice` 20. A new restaurant check uses up to 2 web searches.
 
 ## Product decisions (from Logan)
 - **$0 hosting** where possible. The suggested upgrade, if reliability ever matters more than cost, is Render Basic Postgres at about $6/month.
@@ -71,10 +78,9 @@ GitHub Actions CI runs both test suites and the build on Node 22 / npm 10.
 
 ## Roadmap (plan written 2026-10-05)
 1. ~~Real recipe search~~: done (2e53c4b).
-2. **Celiac Mode Part B (next):** a "Gluten check" page, shown in the nav only in Celiac Mode:
+2. **Celiac Mode Part B:** the "Gluten check" page has the restaurant check, menu photo and waiter voice (2026-10-05). Still to do:
    - `GET /api/gluten/barcode/:code`: the `ProductChecks` cache → Open Food Facts (free, 15 requests/minute, User-Agent `FridgeBook/1.0 (email)`, ODbL credit) → `scanIngredientsText` and the rules → Gemini → OpenAI web research when the answer is unclear;
-   - `POST /api/gluten/product-photo` and `/menu` via Gemini vision (needs image support in `lib/gemini.js` and a route-level JSON limit of about 6mb). The menu check gives a verdict per dish plus questions to ask the server;
-   - `POST /api/gluten/restaurant`: OpenAI web search, keeping cited links only;
+   - `POST /api/gluten/product-photo` via Gemini vision (`lib/gemini.js` already takes `media`);
    - a dining card with a checklist to show staff;
    - gluten-free recipe search (`intolerances=gluten`) and flagging gluten ingredients in recipes.
 3. **iPhone app:** Expo / React Native in `mobile/`, sharing the backend:
@@ -88,5 +94,7 @@ GitHub Actions CI runs both test suites and the build on Node 22 / npm 10.
 - Add `SPOONACULAR_API_KEY` and `OPENAI_API_KEY` on Render, set a spending limit on the OpenAI dashboard, then test those providers live.
 - Rotate the Google OAuth client secret if that hasn't been done. The old netlify.app redirect URI can be removed from Google.
 - The GitHub secret alert for the old Firebase key (project `fridgebook-f648a`, removed in ddfdacd) should be closed as "Won't fix".
+- Restaurant search by name needs `OPENAI_API_KEY` on Render; until then only menu links work. Recipe cross-checks need `SPOONACULAR_API_KEY`.
+- Possible saving: Gemini's Google Search grounding might replace the OpenAI web searches for restaurants (untested).
 - Known quirk: `Nav.js` logs users out after 30 idle minutes, even though sessions last 30 days.
 - 19 npm audit findings remain inside CRA's dev tooling. Fixing them would mean moving to Vite.
