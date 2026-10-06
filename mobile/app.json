@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "FridgeBook",
+    "slug": "fridgebook",
+    "scheme": "fridgebook",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFF8EC"
+    },
+    "ios": {
+      "bundleIdentifier": "com.fridgebook.app",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "com.fridgebook.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#FFF8EC",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "FridgeBook uses the camera to read restaurant menus for gluten.",
+          "photosPermission": "FridgeBook reads menu photos you choose to check them for gluten.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "FridgeBook records what your server says about a dish so it can check the ingredients for gluten. The recording isn't saved.",
+          "enableBackgroundPlayback": false
+        }
+      ]
+    ],
+    "extra": {
+      "apiUrl": "https://fridge-book.com"
+    }
+  }
+}
