@@ -98,6 +98,7 @@ describe("gluten labels on kitchen items", () => {
 
 test("a failed AI check isn't saved, so the item is checked again later", async () => {
   gemini.generateJson = async () => { throw new Error("down"); };
+  await t.db.IngredientChecks.destroy({ where: {} }); // an earlier test taught the dictionary about cereal
   const { cookie } = await t.login("Alice");
   await addItem(cookie, "Cereal");
   const first = await t.request("POST", "/api/gluten/classify-kitchen", { cookie, body: {} });

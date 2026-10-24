@@ -23,19 +23,22 @@ async function recordUse(userId, kind, today) {
 
 /**
  * route = /api/gluten/classify-kitchen
- * Labels kitchen items that haven't been checked yet (rules, then one AI call
- * for the rest). Returns [{ id, gluten_status, gluten_reason }] for what changed.
+ * Labels kitchen items that haven't been checked yet (rules, then the shared
+ * ingredient dictionary, then one AI call for the rest). Returns
+ * [{ id, gluten_status, gluten_reason }] for what changed. Only a check that
+ * asks the AI counts towards the daily limit.
  */
 router.post("/classify-kitchen", async (req, res) => {
     const today = localDate(req.body && req.body.local_date);
     try {
         const foods = await db.Foods.findAll({ where: { UserId: req.user.id, gluten_status: null }, order: [["id", "ASC"]], limit: 60 });
         if (!foods.length) return res.json([]);
-        if (await usedToday(req.user.id, "gluten", today) >= DAILY_LIMIT) {
+        const allowAi = await usedToday(req.user.id, "gluten", today) < DAILY_LIMIT;
+        const results = await classifyNames(foods.map((food) => food.name), { allowAi });
+        if (!allowAi && results.every((r) => r.retry)) {
             return res.status(429).json({ error: "You've used today's gluten checks. They reset at midnight." });
         }
-        const results = await classifyNames(foods.map((food) => food.name));
-        await recordUse(req.user.id, "gluten", today);
+        if (results.aiUsed) await recordUse(req.user.id, "gluten", today);
         const updates = [];
         for (const [i, food] of foods.entries()) {
             // a failed AI check isn't saved, so the item is checked again next time

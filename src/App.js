@@ -8,6 +8,7 @@ import Recipes from "./components/Recipes"
 import ShoppingList from "./components/ShoppingList"
 import ReceiptScan from "./components/ReceiptScan"
 import Settings from "./components/Settings"
+import GlutenCheck from "./components/GlutenCheck"
 import EventCalendar from "./components/EventCalendar"
 import Landing from "./components/Landing"
 import Logo from "./components/Logo"
@@ -96,6 +97,7 @@ function App() {
             <PrivateRoute exact path="/shopping" component={ShoppingList} />
             <PrivateRoute exact path="/scan" component={ReceiptScan} />
             <PrivateRoute exact path="/settings" component={Settings} />
+            <PrivateRoute exact path="/gluten" component={GlutenCheck} />
             <PrivateRoute exact path="/calendar" component={EventCalendar} />
             <Redirect to="/" />
           </Switch>
